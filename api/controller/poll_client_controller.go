@@ -1,18 +1,16 @@
 package controller
 
 import (
-	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type PollClientController struct {
-	pollClientUsecse domain.PollClientUsecase
-	env              *bootstrap.Env
+	PollClientUsecse domain.PollClientUsecase
 }
 
-func (pcc *PollClientController) submit(c *gin.Context) {
+func (pcc *PollClientController) Submit(c *gin.Context) {
 	var req domain.PollClientRequest
 
 	err := c.BindJSON(&req)
@@ -21,7 +19,7 @@ func (pcc *PollClientController) submit(c *gin.Context) {
 		return
 	}
 
-	err = pcc.pollClientUsecse.SubmitVote(c, req.ID, req.Votes)
+	err = pcc.PollClientUsecse.SubmitVote(c, req.ID, req.Votes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
@@ -35,7 +33,7 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 
 	var polls []domain.Poll
 
-	polls, err := pcc.pollClientUsecse.GetBySheetID(c, id)
+	polls, err := pcc.PollClientUsecse.GetBySheetID(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,8 +9,7 @@ import (
 )
 
 type PollAdminController struct {
-	pollAdminUsecase domain.PollAdminUsecase
-	env              *bootstrap.Env
+	PollAdminUsecase domain.PollAdminUsecase
 }
 
 func (pc *PollAdminController) Create(c *gin.Context) {
@@ -45,7 +43,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		UpdatedAt:   time.Now(),
 	}
 
-	err = pc.pollAdminUsecase.CreatePoll(c, &poll)
+	err = pc.PollAdminUsecase.CreatePoll(c, &poll)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
@@ -93,7 +91,7 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		UpdatedAt:   time.Now(),
 	}
 
-	err = pc.pollAdminUsecase.EditPoll(c, &poll)
+	err = pc.PollAdminUsecase.EditPoll(c, &poll)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 	}
@@ -106,7 +104,7 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 
 	var polls []domain.Poll
 
-	polls, err := pc.pollAdminUsecase.GetBySheetID(c, id)
+	polls, err := pc.PollAdminUsecase.GetBySheetID(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
@@ -132,7 +130,7 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 func (pc *PollAdminController) Delete(c *gin.Context) {
 	id := c.Param("id")
 
-	err := pc.pollAdminUsecase.Delete(c, id)
+	err := pc.PollAdminUsecase.Delete(c, id)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
