@@ -24,4 +24,5 @@ type PollAdminUsecase interface {
 	CreatePoll(c context.Context, poll *Poll) error
 	GetBySheetID(c context.Context, sheetID string) ([]Poll, error)
 	EditPoll(c context.Context, poll *Poll) error
+	Delete(c context.Context, id string) error
 }

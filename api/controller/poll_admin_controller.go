@@ -51,7 +51,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "poll created successfully"})
+	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: "poll created successfully"})
 }
 
 func (pc *PollAdminController) Edit(c *gin.Context) {
@@ -127,4 +127,18 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (pc *PollAdminController) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	err := pc.pollAdminUsecase.Delete(c, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "poll deleted successfully"})
+
 }

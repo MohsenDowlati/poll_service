@@ -15,6 +15,19 @@ type pollRepository struct {
 	collection string
 }
 
+func (pr *pollRepository) Delete(ctx context.Context, id string) error {
+	collection := pr.database.Collection(pr.collection)
+
+	hexID, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": hexID})
+	return err
+}
+
 func (pr *pollRepository) Create(ctx context.Context, poll *domain.Poll) error {
 	collection := pr.database.Collection(pr.collection)
 	_, err := collection.InsertOne(ctx, poll)

@@ -34,4 +34,5 @@ type PollRepository interface {
 	GetPollBySheetID(ctx context.Context, sheetID string) (poll []Poll, err error)
 	EditPoll(ctx context.Context, poll *Poll) error
 	SubmitVote(ctx context.Context, id string, votes []int) error
+	Delete(ctx context.Context, id string) error
 }

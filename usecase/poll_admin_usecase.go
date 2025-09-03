@@ -11,6 +11,15 @@ type pollAdminUsecase struct {
 	contextTimeout time.Duration
 }
 
+func (p pollAdminUsecase) Delete(c context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
+	defer cancel()
+
+	err := p.repository.Delete(ctx, id)
+
+	return err
+}
+
 func (p pollAdminUsecase) CreatePoll(c context.Context, poll *domain.Poll) error {
 	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
 	defer cancel()
