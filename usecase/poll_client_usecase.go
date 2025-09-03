@@ -11,6 +11,14 @@ type pollClientUsecase struct {
 	contextTimeout time.Duration
 }
 
+func (p pollClientUsecase) SubmitVote(c context.Context, id string, votes []int) error {
+	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
+	defer cancel()
+
+	err := p.repository.SubmitVote(ctx, id, votes)
+	return err
+}
+
 func (p pollClientUsecase) GetBySheetID(c context.Context, sheetID string) ([]domain.Poll, error) {
 	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
 	defer cancel()

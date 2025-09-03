@@ -40,22 +40,6 @@ func (pr *pollRepository) GetPollBySheetID(ctx context.Context, sheetID string) 
 	return polls, err
 }
 
-func (pr *pollRepository) GetPollByUserID(ctx context.Context, userID string) (poll []domain.Poll, err error) {
-	collection := pr.database.Collection(pr.collection)
-	var polls []domain.Poll
-
-	idHex, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return polls, err
-	}
-	cursor, err := collection.Find(ctx, bson.D{{"userId", idHex}})
-	err = cursor.All(ctx, &polls)
-	if polls == nil {
-		return []domain.Poll{}, nil
-	}
-	return polls, err
-}
-
 func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error {
 	collection := pr.database.Collection(pr.collection)
 

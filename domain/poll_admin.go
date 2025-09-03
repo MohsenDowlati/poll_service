@@ -22,7 +22,6 @@ type PollAdminResponse struct {
 
 type PollAdminUsecase interface {
 	CreatePoll(c context.Context, poll *Poll) error
-	GetByUserID(c context.Context, userID string) ([]Poll, error)
 	GetBySheetID(c context.Context, sheetID string) ([]Poll, error)
 	EditPoll(c context.Context, poll *Poll) error
 }
