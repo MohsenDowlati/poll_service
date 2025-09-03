@@ -18,7 +18,7 @@ const (
 
 type Poll struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	SheetID     primitive.ObjectID `bson:"sheet_id"`
+	SheetID     primitive.ObjectID `bson:"sheetID"`
 	UserID      primitive.ObjectID `bson:"userID"`
 	Title       string             `bson:"title"`
 	Options     []string           `bson:"options"`
