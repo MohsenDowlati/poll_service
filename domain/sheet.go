@@ -9,15 +9,21 @@ import (
 const CollectionSheet = "sheets"
 
 type Sheet struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	UserID      primitive.ObjectID `bson:"userID"`
-	Description string             `bson:"description"`
-	CreatedAt   time.Time          `bson:"createdAt"`
-	UpdatedAt   time.Time          `bson:"updatedAt"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID      primitive.ObjectID `bson:"userID" json:"-"`
+	Description string             `bson:"description" json:"description"`
+	CreatedAt   time.Time          `bson:"createdAt" json:"-"`
+	UpdatedAt   time.Time          `bson:"updatedAt" json:"-"`
 }
 
 type SheetRepository interface {
 	Create(ctx context.Context, sheet Sheet) error
 	GetAll(ctx context.Context) ([]Sheet, error)
 	Delete(ctx context.Context, id string) error
+}
+
+type SheetUseCase interface {
+	Create(c context.Context, sheet Sheet) error
+	GetAll(c context.Context) ([]Sheet, error)
+	Delete(c context.Context, id string) error
 }
