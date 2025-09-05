@@ -11,7 +11,8 @@ const CollectionSheet = "sheets"
 type Sheet struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserID      primitive.ObjectID `bson:"userID" json:"-"`
-	Description string             `bson:"description" json:"description"`
+	Title       string             `bson:"title" form:"title" binding:"required" json:"title"`
+	Description string             `bson:"description" form:"description" json:"description"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"-"`
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"-"`
 }
