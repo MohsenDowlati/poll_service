@@ -44,7 +44,24 @@ func (sc *SheetController) Create(c *gin.Context) {
 }
 
 func (sc *SheetController) Fetch(c *gin.Context) {
-	tasks, err := sc.SheetuseCase.GetAll(c)
+	userID := c.GetString("x-user-id")
+
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "user id is empty"})
+		return
+	}
+
+	sheets, err := sc.SheetuseCase.GetAll(c)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sheets)
+}
+
+func (sc *SheetController) FetchByID(c *gin.Context) {
+	id := c.Param("id")
 
 	userID := c.GetString("x-user-id")
 
@@ -53,11 +70,15 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 		return
 	}
 
+	var sheet domain.Sheet
+
+	sheet, err := sc.SheetuseCase.GetByID(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, tasks)
+
+	c.JSON(http.StatusOK, sheet)
 }
 
 func (sc *SheetController) Delete(c *gin.Context) {

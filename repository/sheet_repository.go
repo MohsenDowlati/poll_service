@@ -13,6 +13,19 @@ type sheetRepository struct {
 	collection string
 }
 
+func (sr *sheetRepository) GetByID(ctx context.Context, id string) (domain.Sheet, error) {
+	collection := sr.database.Collection(sr.collection)
+
+	UID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return domain.Sheet{}, err
+	}
+
+	var result domain.Sheet
+	err = collection.FindOne(ctx, bson.M{"_id": UID}).Decode(&result)
+	return result, err
+}
+
 func (sr *sheetRepository) Create(ctx context.Context, sheet domain.Sheet) error {
 	collection := sr.database.Collection(sr.collection)
 
