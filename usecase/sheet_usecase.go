@@ -11,6 +11,13 @@ type sheetUseCase struct {
 	contextTimeout time.Duration
 }
 
+func (s sheetUseCase) GetByUserID(c context.Context, userID string) ([]domain.Sheet, error) {
+	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
+	defer cancel()
+
+	return s.repository.GetByUserID(ctx, userID)
+}
+
 func (s sheetUseCase) GetByID(c context.Context, id string) (domain.Sheet, error) {
 	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
 	defer cancel()

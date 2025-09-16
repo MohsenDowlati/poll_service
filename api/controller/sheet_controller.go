@@ -46,12 +46,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 func (sc *SheetController) Fetch(c *gin.Context) {
 	userID := c.GetString("x-user-id")
 
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "user id is empty"})
-		return
-	}
-
-	sheets, err := sc.SheetuseCase.GetAll(c)
+	sheets, err := sc.SheetuseCase.GetByUserID(c, userID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})

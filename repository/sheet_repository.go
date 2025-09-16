@@ -13,6 +13,29 @@ type sheetRepository struct {
 	collection string
 }
 
+func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string) ([]domain.Sheet, error) {
+	collection := sr.database.Collection(sr.collection)
+
+	UID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []domain.Sheet
+
+	cursor, err := collection.Find(ctx, bson.D{{"sheetID", UID}})
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (sr *sheetRepository) GetByID(ctx context.Context, id string) (domain.Sheet, error) {
 	collection := sr.database.Collection(sr.collection)
 

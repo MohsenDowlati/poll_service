@@ -20,6 +20,7 @@ type Sheet struct {
 type SheetRepository interface {
 	Create(ctx context.Context, sheet Sheet) error
 	GetAll(ctx context.Context) ([]Sheet, error)
+	GetByUserID(ctx context.Context, userID string) ([]Sheet, error)
 	Delete(ctx context.Context, id string) error
 	GetByID(ctx context.Context, id string) (Sheet, error)
 }
@@ -28,5 +29,6 @@ type SheetUseCase interface {
 	Create(c context.Context, sheet Sheet) error
 	GetAll(c context.Context) ([]Sheet, error)
 	Delete(c context.Context, id string) error
+	GetByUserID(c context.Context, userID string) ([]Sheet, error)
 	GetByID(c context.Context, id string) (Sheet, error)
 }
