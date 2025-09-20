@@ -15,6 +15,29 @@ type userRepository struct {
 	collection string
 }
 
+func (ur *userRepository) GetByPhone(c context.Context, phone string) (domain.User, error) {
+	collection := ur.database.Collection(ur.collection)
+	var user domain.User
+	err := collection.FindOne(c, bson.M{"phone": phone}).Decode(&user)
+	return user, err
+
+}
+
+func (ur *userRepository) VerifyUser(c context.Context, id string) error {
+	collection := ur.database.Collection(ur.collection)
+
+	idHex, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": idHex}
+	update := bson.M{"$set": bson.M{"isVerified": true}}
+
+	_, err = collection.UpdateOne(c, filter, update, options.Update().SetUpsert(true))
+	return err
+}
+
 func NewUserRepository(db mongo.Database, collection string) domain.UserRepository {
 	return &userRepository{
 		database:   db,
