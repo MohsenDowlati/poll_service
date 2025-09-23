@@ -16,6 +16,7 @@ const (
 	SuperAdmin    UserType = "super_admin"
 	VerifiedAdmin UserType = "verified_admin"
 	NewUser       UserType = "new_user"
+	CanceledUser  UserType = "canceled_user"
 )
 
 type User struct {
