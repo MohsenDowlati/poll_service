@@ -24,6 +24,13 @@ func JwtAuthMiddleware(secret string) gin.HandlerFunc {
 					return
 				}
 				c.Set("x-user-id", userID)
+				userType, err := tokenutil.ExtractRoleFromToken(authToken, secret)
+				if err != nil {
+					c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: err.Error()})
+					c.Abort()
+					return
+				}
+				c.Set("x-user-type", userType)
 				c.Next()
 				return
 			}

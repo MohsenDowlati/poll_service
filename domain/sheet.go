@@ -12,6 +12,7 @@ type Sheet struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserID      primitive.ObjectID `bson:"userID" json:"-"`
 	Title       string             `bson:"title" form:"title" binding:"required" json:"title"`
+	Venue       string             `bson:"venue" form:"venue" binding:"required" json:"venue"`
 	Description string             `bson:"description" form:"description" json:"description"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"-"`
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"-"`

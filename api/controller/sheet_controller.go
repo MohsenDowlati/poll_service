@@ -13,6 +13,8 @@ type SheetController struct {
 }
 
 func (sc *SheetController) Create(c *gin.Context) {
+
+	//TODO: check if user is valid
 	var sheet domain.Sheet
 
 	err := c.ShouldBind(&sheet)
@@ -39,28 +41,47 @@ func (sc *SheetController) Create(c *gin.Context) {
 		return
 	}
 
+	//TODO: Send a validation for super admin
 	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: "sheet created!"})
 
 }
 
 func (sc *SheetController) Fetch(c *gin.Context) {
 	userID := c.GetString("x-user-id")
+	userType := c.GetString("x-user-type")
 
-	sheets, err := sc.SheetuseCase.GetByUserID(c, userID)
+	var sheets []domain.Sheet
+	var err error
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+	if domain.UserType(userType) == domain.SuperAdmin {
+		sheets, err = sc.SheetuseCase.GetAll(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
+	} else if domain.UserType(userType) == domain.VerifiedAdmin {
+		sheets, err = sc.SheetuseCase.GetByUserID(c, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
+	} else {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "invalid user type"})
 		return
 	}
+
 	c.JSON(http.StatusOK, sheets)
 }
 
 func (sc *SheetController) FetchByID(c *gin.Context) {
+
+	//TODO: check if id is okay for admin
+
 	id := c.Param("id")
 
-	userID := c.GetString("x-user-id")
+	t := c.GetString("x-user-type")
 
-	if userID == "" {
+	if domain.UserType(t) != domain.SuperAdmin {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "user id is empty"})
 		return
 	}
@@ -77,6 +98,7 @@ func (sc *SheetController) FetchByID(c *gin.Context) {
 }
 
 func (sc *SheetController) Delete(c *gin.Context) {
+	//TODO: check auth
 	id := c.Param("id")
 
 	userID := c.GetString("x-user-id")
