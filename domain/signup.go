@@ -5,9 +5,10 @@ import (
 )
 
 type SignupRequest struct {
-	Name     string `form:"name" binding:"required"`
-	Email    string `form:"email" binding:"required,email"`
-	Password string `form:"password" binding:"required"`
+	Name         string `form:"name" binding:"required"`
+	Phone        string `form:"phone" binding:"required,phone"`
+	Organization string `form:"organization" binding:"required"`
+	Password     string `form:"password" binding:"required"`
 }
 
 type SignupResponse struct {
@@ -17,7 +18,7 @@ type SignupResponse struct {
 
 type SignupUsecase interface {
 	Create(c context.Context, user *User) error
-	GetUserByEmail(c context.Context, email string) (User, error)
+	GetUserByPhone(c context.Context, phone string) (User, error)
 	CreateAccessToken(user *User, secret string, expiry int) (accessToken string, err error)
 	CreateRefreshToken(user *User, secret string, expiry int) (refreshToken string, err error)
 }

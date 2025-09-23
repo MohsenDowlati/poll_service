@@ -24,9 +24,9 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		return
 	}
 
-	_, err = sc.SignupUsecase.GetUserByEmail(c, request.Email)
+	_, err = sc.SignupUsecase.GetUserByPhone(c, request.Phone)
 	if err == nil {
-		c.JSON(http.StatusConflict, domain.ErrorResponse{Message: "User already exists with the given email"})
+		c.JSON(http.StatusConflict, domain.ErrorResponse{Message: "User already exists with the given phone"})
 		return
 	}
 
@@ -44,7 +44,7 @@ func (sc *SignupController) Signup(c *gin.Context) {
 	user := domain.User{
 		ID:       primitive.NewObjectID(),
 		Name:     request.Name,
-		Email:    request.Email,
+		Email:    request.Phone,
 		Password: request.Password,
 	}
 
@@ -53,6 +53,8 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
+
+	//TODO: send notifications to super admins
 
 	accessToken, err := sc.SignupUsecase.CreateAccessToken(&user, sc.Env.AccessTokenSecret, sc.Env.AccessTokenExpiryHour)
 	if err != nil {

@@ -10,6 +10,14 @@ const (
 	CollectionUser = "users"
 )
 
+type UserType string
+
+const (
+	SuperAdmin    UserType = "super_admin"
+	VerifiedAdmin UserType = "verified_admin"
+	NewUser       UserType = "new_user"
+)
+
 type User struct {
 	ID           primitive.ObjectID `bson:"_id"`
 	Name         string             `bson:"name"`
@@ -17,7 +25,8 @@ type User struct {
 	Phone        string             `bson:"phone"`
 	Password     string             `bson:"password"`
 	IsVerified   bool               `bson:"isVerified"`
-	IsSuperAdmin bool               `bson:"isSuperAdmin"`
+	Organization string             `bson:"organization"`
+	Admin        UserType           `bson:"admin"`
 }
 
 type UserRepository interface {

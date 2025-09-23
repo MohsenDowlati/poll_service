@@ -5,8 +5,9 @@ import (
 )
 
 type JwtCustomClaims struct {
-	Name string `json:"name"`
-	ID   string `json:"id"`
+	Name  string   `json:"name"`
+	ID    string   `json:"id"`
+	Admin UserType `json:"admin"`
 	jwt.StandardClaims
 }
 
