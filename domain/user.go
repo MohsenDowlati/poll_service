@@ -37,4 +37,5 @@ type UserRepository interface {
 	GetByID(c context.Context, id string) (User, error)
 	GetByPhone(c context.Context, phone string) (User, error)
 	VerifyUser(c context.Context, id string) error
+	UpdateAdminStatus(c context.Context, id string, admin UserType, isVerified bool) error
 }

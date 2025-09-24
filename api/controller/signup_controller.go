@@ -11,8 +11,9 @@ import (
 )
 
 type SignupController struct {
-	SignupUsecase domain.SignupUsecase
-	Env           *bootstrap.Env
+	SignupUsecase       domain.SignupUsecase
+	NotificationUsecase domain.NotificationUsecase
+	Env                 *bootstrap.Env
 }
 
 func (sc *SignupController) Signup(c *gin.Context) {
@@ -39,13 +40,15 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		return
 	}
 
-	request.Password = string(encryptedPassword)
-
 	user := domain.User{
-		ID:       primitive.NewObjectID(),
-		Name:     request.Name,
-		Email:    request.Phone,
-		Password: request.Password,
+		ID:           primitive.NewObjectID(),
+		Name:         request.Name,
+		Email:        request.Phone,
+		Phone:        request.Phone,
+		Organization: request.Organization,
+		Password:     string(encryptedPassword),
+		Admin:        domain.NewUser,
+		IsVerified:   false,
 	}
 
 	err = sc.SignupUsecase.Create(c, &user)
@@ -54,7 +57,12 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		return
 	}
 
-	//TODO: send notifications to super admins
+	if sc.NotificationUsecase != nil {
+		if err = sc.NotificationUsecase.CreateForNewUser(c, &user); err != nil {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
+	}
 
 	accessToken, err := sc.SignupUsecase.CreateAccessToken(&user, sc.Env.AccessTokenSecret, sc.Env.AccessTokenExpiryHour)
 	if err != nil {

@@ -14,9 +14,12 @@ import (
 
 func NewSignupRouter(env *bootstrap.Env, timeout time.Duration, db mongo.Database, group *gin.RouterGroup) {
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
+	nr := repository.NewNotificationRepository(db, domain.CollectionNotification)
+
 	sc := controller.SignupController{
-		SignupUsecase: usecase.NewSignupUsecase(ur, timeout),
-		Env:           env,
+		SignupUsecase:       usecase.NewSignupUsecase(ur, timeout),
+		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, timeout),
+		Env:                 env,
 	}
 	group.POST("/signup", sc.Signup)
 }

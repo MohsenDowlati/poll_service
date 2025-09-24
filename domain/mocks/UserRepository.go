@@ -107,3 +107,17 @@ func NewUserRepository(t mockConstructorTestingTNewUserRepository) *UserReposito
 
 	return mock
 }
+
+// UpdateAdminStatus provides a mock function with given fields: c, id, admin, isVerified
+func (_m *UserRepository) UpdateAdminStatus(c context.Context, id string, admin domain.UserType, isVerified bool) error {
+	ret := _m.Called(c, id, admin, isVerified)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.UserType, bool) error); ok {
+		r0 = rf(c, id, admin, isVerified)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

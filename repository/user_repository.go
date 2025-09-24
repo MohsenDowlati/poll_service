@@ -93,3 +93,21 @@ func (ur *userRepository) GetByID(c context.Context, id string) (domain.User, er
 	err = collection.FindOne(c, bson.M{"_id": idHex}).Decode(&user)
 	return user, err
 }
+func (ur *userRepository) UpdateAdminStatus(c context.Context, id string, admin domain.UserType, isVerified bool) error {
+	collection := ur.database.Collection(ur.collection)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"admin":      admin,
+			"isVerified": isVerified,
+		},
+	}
+
+	_, err = collection.UpdateOne(c, bson.M{"_id": objectID}, update)
+	return err
+}
