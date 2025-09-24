@@ -2,8 +2,10 @@ package usecase
 
 import (
 	"context"
-	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"time"
+
+	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type sheetUseCase struct {
@@ -44,6 +46,13 @@ func (s sheetUseCase) Delete(c context.Context, id string) error {
 	defer cancel()
 
 	return s.repository.Delete(ctx, id)
+}
+
+func (s sheetUseCase) UpdateStatus(c context.Context, id string, status domain.SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error {
+	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
+	defer cancel()
+
+	return s.repository.UpdateStatus(ctx, id, status, approvedBy, approvedAt)
 }
 
 func NewSheetUseCase(repo domain.SheetRepository, timeout time.Duration) domain.SheetUseCase {

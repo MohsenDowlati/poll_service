@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type notificationRepository struct {
@@ -14,51 +16,83 @@ type notificationRepository struct {
 	collection string
 }
 
-func (n notificationRepository) Create(ctx context.Context, notification *domain.Notification) error {
-	collection := n.database.Collection(n.collection)
+func NewNotificationRepository(db mongo.Database, collection string) domain.NotificationRepository {
+	return &notificationRepository{
+		database:   db,
+		collection: collection,
+	}
+}
+
+func (nr *notificationRepository) Create(ctx context.Context, notification *domain.Notification) error {
+	collection := nr.database.Collection(nr.collection)
 	_, err := collection.InsertOne(ctx, notification)
 	return err
 }
 
-func (n notificationRepository) FetchPending(ctx context.Context) ([]domain.Notification, error) {
-	collection := n.database.Collection(n.collection)
-	cursor, err := collection.Find(ctx, bson.D{})
+func (nr *notificationRepository) FetchPending(ctx context.Context) ([]domain.Notification, error) {
+	collection := nr.database.Collection(nr.collection)
 
+	filter := bson.M{"status": domain.NotificationPending}
+	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+
+	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	var notifications []domain.Notification
-
-	err = cursor.All(ctx, &notifications)
-	if notifications == nil {
-		return []domain.Notification{}, err
+	if err = cursor.All(ctx, &notifications); err != nil {
+		return nil, err
 	}
 
-	return notifications, err
+	if notifications == nil {
+		return []domain.Notification{}, nil
+	}
+
+	return notifications, nil
 }
 
-func (n notificationRepository) GetByID(ctx context.Context, id string) (domain.Notification, error) {
-	collection := n.database.Collection(n.collection)
-	var notification domain.Notification
+func (nr *notificationRepository) GetByID(ctx context.Context, id string) (domain.Notification, error) {
+	collection := nr.database.Collection(nr.collection)
 
-	ID, err := primitive.ObjectIDFromHex(id)
+	var notification domain.Notification
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return notification, err
 	}
 
-	err = collection.FindOne(ctx, bson.D{{Key: "id", Value: ID}}).Decode(&notification)
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&notification)
 	return notification, err
 }
 
-func (n notificationRepository) UpdateStatus(ctx context.Context, id string, status domain.NotificationStatus, resolvedBy primitive.ObjectID, updatedAt time.Time) error {
-	//TODO implement me
-	panic("implement me")
+func (nr *notificationRepository) UpdateStatus(ctx context.Context, id string, status domain.NotificationStatus, resolvedBy primitive.ObjectID, updatedAt time.Time) error {
+	collection := nr.database.Collection(nr.collection)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status":     status,
+			"updatedAt":  updatedAt,
+			"resolvedBy": resolvedBy,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	return err
 }
 
-func NewNotificationRepository(database mongo.Database, collection string) domain.NotificationRepository {
-	return &notificationRepository{
-		database:   database,
-		collection: collection,
+func (nr *notificationRepository) Delete(ctx context.Context, id string) error {
+	collection := nr.database.Collection(nr.collection)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
 	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	return err
 }

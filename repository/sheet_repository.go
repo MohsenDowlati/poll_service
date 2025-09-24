@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,16 +23,18 @@ func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string) ([]do
 		return nil, err
 	}
 
-	var result []domain.Sheet
-
-	cursor, err := collection.Find(ctx, bson.D{{"sheetID", UID}})
+	cursor, err := collection.Find(ctx, bson.M{"userID": UID})
 	if err != nil {
 		return nil, err
 	}
 
-	err = cursor.All(ctx, &result)
-	if err != nil {
+	var result []domain.Sheet
+	if err = cursor.All(ctx, &result); err != nil {
 		return nil, err
+	}
+
+	if result == nil {
+		return []domain.Sheet{}, nil
 	}
 
 	return result, nil
@@ -60,19 +64,21 @@ func (sr *sheetRepository) GetAll(ctx context.Context) ([]domain.Sheet, error) {
 	collection := sr.database.Collection(sr.collection)
 
 	cursor, err := collection.Find(ctx, bson.D{})
-
 	if err != nil {
 		return nil, err
 	}
 
 	var sheets []domain.Sheet
 
-	err = cursor.All(ctx, &sheets)
-	if sheets == nil {
-		return []domain.Sheet{}, err
+	if err = cursor.All(ctx, &sheets); err != nil {
+		return nil, err
 	}
 
-	return sheets, err
+	if sheets == nil {
+		return []domain.Sheet{}, nil
+	}
+
+	return sheets, nil
 }
 
 func (sr *sheetRepository) Delete(ctx context.Context, id string) error {
@@ -83,6 +89,27 @@ func (sr *sheetRepository) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	_, err = collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: idHex}})
+	return err
+}
+
+func (sr *sheetRepository) UpdateStatus(ctx context.Context, id string, status domain.SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error {
+	collection := sr.database.Collection(sr.collection)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status":     status,
+			"approvedBy": approvedBy,
+			"approvedAt": approvedAt,
+			"updatedAt":  approvedAt,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
 	return err
 }
 

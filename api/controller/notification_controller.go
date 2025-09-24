@@ -78,16 +78,35 @@ func (nc *NotificationController) Reject(c *gin.Context) {
 
 func mapNotificationToResponse(notification domain.Notification) domain.NotificationResponse {
 	response := domain.NotificationResponse{
-		ID:               notification.ID.Hex(),
-		UserID:           notification.UserID.Hex(),
-		UserName:         notification.UserName,
-		UserPhone:        notification.UserPhone,
-		UserOrganization: notification.UserOrganization,
-		Status:           notification.Status,
-		CreatedAt:        notification.CreatedAt,
-		UpdatedAt:        notification.UpdatedAt,
+		ID:        notification.ID.Hex(),
+		Type:      notification.Type,
+		SubjectID: notification.SubjectID.Hex(),
+		Status:    notification.Status,
+		CreatedAt: notification.CreatedAt,
+		UpdatedAt: notification.UpdatedAt,
 	}
 
+	if !notification.UserID.IsZero() {
+		response.UserID = notification.UserID.Hex()
+	}
+	if notification.UserName != "" {
+		response.UserName = notification.UserName
+	}
+	if notification.UserPhone != "" {
+		response.UserPhone = notification.UserPhone
+	}
+	if notification.UserOrganization != "" {
+		response.UserOrganization = notification.UserOrganization
+	}
+	if !notification.SheetID.IsZero() {
+		response.SheetID = notification.SheetID.Hex()
+	}
+	if notification.SheetTitle != "" {
+		response.SheetTitle = notification.SheetTitle
+	}
+	if notification.SheetVenue != "" {
+		response.SheetVenue = notification.SheetVenue
+	}
 	if !notification.ResolvedBy.IsZero() {
 		response.ResolvedBy = notification.ResolvedBy.Hex()
 	}

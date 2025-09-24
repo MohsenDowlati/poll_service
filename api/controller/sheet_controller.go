@@ -1,72 +1,106 @@
 package controller
 
 import (
+	"errors"
+	"net/http"
+	"time"
+
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type SheetController struct {
-	SheetuseCase domain.SheetUseCase
+	SheetuseCase        domain.SheetUseCase
+	NotificationUsecase domain.NotificationUsecase
 }
 
 func (sc *SheetController) Create(c *gin.Context) {
+	userID := c.GetString("x-user-id")
+	userType := domain.UserType(c.GetString("x-user-type"))
 
-	//TODO: check if user is valid
+	if userID == "" || (userType != domain.VerifiedAdmin && userType != domain.SuperAdmin) {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
 	var sheet domain.Sheet
 
-	err := c.ShouldBind(&sheet)
-	if err != nil {
+	if err := c.ShouldBind(&sheet); err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	userID := c.GetString("x-user-id")
+	ownerID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid user identifier"})
+		return
+	}
+
+	now := time.Now()
+
 	sheet.ID = primitive.NewObjectID()
+	sheet.UserID = ownerID
+	sheet.CreatedAt = now
+	sheet.UpdatedAt = now
 
-	sheet.UserID, err = primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
-		return
+	if userType == domain.SuperAdmin {
+		sheet.Status = domain.SheetStatusPublished
+		sheet.ApprovedBy = ownerID
+		sheet.ApprovedAt = now
+	} else {
+		sheet.Status = domain.SheetStatusPending
 	}
 
-	sheet.CreatedAt = time.Now()
-	sheet.UpdatedAt = time.Now()
-
-	err = sc.SheetuseCase.Create(c, sheet)
-	if err != nil {
+	if err = sc.SheetuseCase.Create(c, sheet); err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	//TODO: Send a validation for super admin
-	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: "sheet created!"})
+	if userType == domain.VerifiedAdmin && sc.NotificationUsecase != nil {
+		if err = sc.NotificationUsecase.CreateForSheet(c, &sheet); err != nil {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
+	}
 
+	message := "sheet created!"
+	if sheet.Status == domain.SheetStatusPending {
+		message = "sheet submitted for approval"
+	} else {
+		message = "sheet published"
+	}
+
+	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: message})
 }
 
 func (sc *SheetController) Fetch(c *gin.Context) {
 	userID := c.GetString("x-user-id")
-	userType := c.GetString("x-user-type")
+	userType := domain.UserType(c.GetString("x-user-type"))
 
-	var sheets []domain.Sheet
-	var err error
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
 
-	if domain.UserType(userType) == domain.SuperAdmin {
+	var (
+		sheets []domain.Sheet
+		err    error
+	)
+
+	switch userType {
+	case domain.SuperAdmin:
 		sheets, err = sc.SheetuseCase.GetAll(c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
-			return
-		}
-	} else if domain.UserType(userType) == domain.VerifiedAdmin {
+	case domain.VerifiedAdmin:
 		sheets, err = sc.SheetuseCase.GetByUserID(c, userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
-			return
-		}
-	} else {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "invalid user type"})
+	default:
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
@@ -74,23 +108,36 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 }
 
 func (sc *SheetController) FetchByID(c *gin.Context) {
+	identifier := c.Param("id")
+	if identifier == "" {
+		identifier = c.Query("id")
+	}
 
-	//TODO: check if id is okay for admin
-
-	id := c.Param("id")
-
-	t := c.GetString("x-user-type")
-
-	if domain.UserType(t) != domain.SuperAdmin {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "user id is empty"})
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
 		return
 	}
 
-	var sheet domain.Sheet
-
-	sheet, err := sc.SheetuseCase.GetByID(c, id)
+	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	userID := c.GetString("x-user-id")
+	userType := domain.UserType(c.GetString("x-user-type"))
+
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if userType != domain.SuperAdmin && sheet.UserID.Hex() != userID {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
@@ -98,18 +145,40 @@ func (sc *SheetController) FetchByID(c *gin.Context) {
 }
 
 func (sc *SheetController) Delete(c *gin.Context) {
-	//TODO: check auth
-	id := c.Param("id")
+	identifier := c.Param("id")
+	if identifier == "" {
+		identifier = c.Query("id")
+	}
 
-	userID := c.GetString("x-user-id")
-
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "user id is empty"})
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
 		return
 	}
 
-	err := sc.SheetuseCase.Delete(c, id)
+	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	userID := c.GetString("x-user-id")
+	userType := domain.UserType(c.GetString("x-user-type"))
+
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if userType != domain.SuperAdmin && sheet.UserID.Hex() != userID {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if err = sc.SheetuseCase.Delete(c, identifier); err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}

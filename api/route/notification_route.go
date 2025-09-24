@@ -15,9 +15,10 @@ import (
 func NewNotificationRouter(env *bootstrap.Env, timeout time.Duration, db mongo.Database, group *gin.RouterGroup) {
 	nr := repository.NewNotificationRepository(db, domain.CollectionNotification)
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
+	sr := repository.NewSheetRepository(db, domain.CollectionSheet)
 
 	nc := controller.NotificationController{
-		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, timeout),
+		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, sr, timeout),
 	}
 
 	group.GET("/poll/notifications", nc.FetchPending)
