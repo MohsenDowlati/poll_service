@@ -16,6 +16,21 @@ type SheetController struct {
 	NotificationUsecase domain.NotificationUsecase
 }
 
+// Create registers a new sheet.
+// @Summary Create sheet
+// @Description Create a new sheet (verified admin or super admin).
+// @Tags Sheets
+// @Accept mpfd
+// @Produce json
+// @Security BearerAuth
+// @Param title formData string true "Sheet title"
+// @Param venue formData string true "Sheet venue"
+// @Param description formData string false "Sheet description"
+// @Success 201 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/sheet/create [post]
 func (sc *SheetController) Create(c *gin.Context) {
 	userID := c.GetString("x-user-id")
 	userType := domain.UserType(c.GetString("x-user-type"))
@@ -75,6 +90,16 @@ func (sc *SheetController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: message})
 }
 
+// Fetch lists sheets for the authenticated admin.
+// @Summary List sheets
+// @Description Retrieve sheets depending on admin role.
+// @Tags Sheets
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} domain.Sheet
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/sheet/fetch [get]
 func (sc *SheetController) Fetch(c *gin.Context) {
 	userID := c.GetString("x-user-id")
 	userType := domain.UserType(c.GetString("x-user-type"))
@@ -144,6 +169,19 @@ func (sc *SheetController) FetchByID(c *gin.Context) {
 	c.JSON(http.StatusOK, sheet)
 }
 
+// Delete removes a sheet owned by the authenticated admin.
+// @Summary Delete sheet
+// @Description Delete a sheet by identifier.
+// @Tags Sheets
+// @Produce json
+// @Security BearerAuth
+// @Param id query string true "Sheet identifier"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/sheet/delete [put]
 func (sc *SheetController) Delete(c *gin.Context) {
 	identifier := c.Param("id")
 	if identifier == "" {

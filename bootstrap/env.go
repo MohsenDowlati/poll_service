@@ -19,6 +19,9 @@ type Env struct {
 	RefreshTokenExpiryHour int    `mapstructure:"REFRESH_TOKEN_EXPIRY_HOUR"`
 	AccessTokenSecret      string `mapstructure:"ACCESS_TOKEN_SECRET"`
 	RefreshTokenSecret     string `mapstructure:"REFRESH_TOKEN_SECRET"`
+	CookieDomain           string `mapstructure:"COOKIE_DOMAIN"`
+	CookieSecure           bool   `mapstructure:"COOKIE_SECURE"`
+	CookieSameSite         string `mapstructure:"COOKIE_SAME_SITE"`
 	SuperAdminPhone        string `mapstructure:"SUPER_ADMIN_PHONE"`
 	SuperAdminPassword     string `mapstructure:"SUPER_ADMIN_PASSWORD"`
 	SuperAdminName         string `mapstructure:"SUPER_ADMIN_NAME"`

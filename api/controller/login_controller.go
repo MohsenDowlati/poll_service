@@ -15,6 +15,19 @@ type LoginController struct {
 	Env          *bootstrap.Env
 }
 
+// Login authenticates a user and issues new tokens.
+// @Summary Login user
+// @Description Authenticate a user using email and password and receive tokens.
+// @Tags Auth
+// @Accept mpfd
+// @Produce json
+// @Param email formData string true "Registered email address"
+// @Param password formData string true "Password"
+// @Success 200 {object} domain.LoginResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
+// @Router /api/v1/login [post]
 func (lc *LoginController) Login(c *gin.Context) {
 	var request domain.LoginRequest
 
@@ -46,6 +59,8 @@ func (lc *LoginController) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
+
+	setAuthCookies(c, lc.Env, accessToken, refreshToken)
 
 	loginResponse := domain.LoginResponse{
 		AccessToken:  accessToken,

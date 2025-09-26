@@ -12,6 +12,23 @@ type PollAdminController struct {
 	PollAdminUsecase domain.PollAdminUsecase
 }
 
+// Create adds a new poll for the given sheet.
+// @Summary Create poll
+// @Description Create a poll associated with a sheet.
+// @Tags Polls (Admin)
+// @Accept mpfd
+// @Produce json
+// @Security BearerAuth
+// @Param sheet_id formData string true "Sheet identifier"
+// @Param title formData string true "Poll title"
+// @Param options formData []string true "Poll options"
+// @Param poll_type formData string true "Poll type"
+// @Param description formData string false "Poll description"
+// @Success 201 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/create [post]
 func (pc *PollAdminController) Create(c *gin.Context) {
 	var req domain.PollAdminRequest
 
@@ -52,6 +69,24 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: "poll created successfully"})
 }
 
+// Edit updates an existing poll.
+// @Summary Update poll
+// @Description Update fields of an existing poll.
+// @Tags Polls (Admin)
+// @Accept mpfd
+// @Produce json
+// @Security BearerAuth
+// @Param id query string true "Poll identifier"
+// @Param sheet_id formData string true "Sheet identifier"
+// @Param title formData string true "Poll title"
+// @Param options formData []string true "Poll options"
+// @Param poll_type formData string true "Poll type"
+// @Param description formData string false "Poll description"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/edit [post]
 func (pc *PollAdminController) Edit(c *gin.Context) {
 	id := c.Param("id")
 
@@ -99,6 +134,17 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "poll updated successfully"})
 }
 
+// GetBySheetID lists polls registered for a sheet.
+// @Summary List polls for sheet
+// @Description Retrieve all polls created for a sheet.
+// @Tags Polls (Admin)
+// @Produce json
+// @Security BearerAuth
+// @Param id query string true "Sheet identifier"
+// @Success 200 {array} domain.PollAdminResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/admin/fetch [get]
 func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 	id := c.Param("id")
 
@@ -127,6 +173,17 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Delete removes a poll.
+// @Summary Delete poll
+// @Description Delete a poll by identifier.
+// @Tags Polls (Admin)
+// @Produce json
+// @Security BearerAuth
+// @Param id query string true "Poll identifier"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/delete [put]
 func (pc *PollAdminController) Delete(c *gin.Context) {
 	id := c.Param("id")
 

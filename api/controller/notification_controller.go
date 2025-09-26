@@ -12,6 +12,16 @@ type NotificationController struct {
 	NotificationUsecase domain.NotificationUsecase
 }
 
+// FetchPending lists pending notifications for approval.
+// @Summary List pending notifications
+// @Description Retrieve pending notifications (super admin only).
+// @Tags Notifications
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} domain.NotificationResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/poll/notifications [get]
 func (nc *NotificationController) FetchPending(c *gin.Context) {
 	if domain.UserType(c.GetString("x-user-type")) != domain.SuperAdmin {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
@@ -32,6 +42,18 @@ func (nc *NotificationController) FetchPending(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Approve marks a notification as approved.
+// @Summary Approve notification
+// @Description Approve a pending notification (super admin only).
+// @Tags Notifications
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Notification identifier"
+// @Success 200 {object} domain.NotificationResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 409 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/poll/notifications/{id}/approve [post]
 func (nc *NotificationController) Approve(c *gin.Context) {
 	if domain.UserType(c.GetString("x-user-type")) != domain.SuperAdmin {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
@@ -54,6 +76,18 @@ func (nc *NotificationController) Approve(c *gin.Context) {
 	c.JSON(http.StatusOK, mapNotificationToResponse(notification))
 }
 
+// Reject marks a notification as rejected.
+// @Summary Reject notification
+// @Description Reject a pending notification (super admin only).
+// @Tags Notifications
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Notification identifier"
+// @Success 200 {object} domain.NotificationResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 409 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/poll/notifications/{id}/reject [post]
 func (nc *NotificationController) Reject(c *gin.Context) {
 	if domain.UserType(c.GetString("x-user-type")) != domain.SuperAdmin {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})

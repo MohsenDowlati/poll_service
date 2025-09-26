@@ -16,6 +16,20 @@ type SignupController struct {
 	Env                 *bootstrap.Env
 }
 
+// Signup registers a new user and issues auth tokens.
+// @Summary Register a new user
+// @Description Register a new user and receive access and refresh tokens.
+// @Tags Auth
+// @Accept mpfd
+// @Produce json
+// @Param name formData string true "Full name"
+// @Param phone formData string true "Phone number"
+// @Param organization formData string true "Organization name"
+// @Param password formData string true "Password"
+// @Success 200 {object} domain.SignupResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 409 {object} domain.ErrorResponse
+// @Router /api/v1/signup [post]
 func (sc *SignupController) Signup(c *gin.Context) {
 	var request domain.SignupRequest
 
@@ -75,6 +89,8 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
+
+	setAuthCookies(c, sc.Env, accessToken, refreshToken)
 
 	signupResponse := domain.SignupResponse{
 		AccessToken:  accessToken,
