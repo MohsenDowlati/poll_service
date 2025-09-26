@@ -1,0 +1,753 @@
+basePath: /api/v1
+definitions:
+  domain.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  domain.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  domain.NotificationResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      resolved_by:
+        type: string
+      sheet_id:
+        type: string
+      sheet_title:
+        type: string
+      sheet_venue:
+        type: string
+      status:
+        $ref: '#/definitions/domain.NotificationStatus'
+      subject_id:
+        type: string
+      type:
+        $ref: '#/definitions/domain.NotificationType'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+      user_organization:
+        type: string
+      user_phone:
+        type: string
+    type: object
+  domain.NotificationStatus:
+    enum:
+    - pending
+    - approved
+    - rejected
+    type: string
+    x-enum-varnames:
+    - NotificationPending
+    - NotificationApproved
+    - NotificationRejected
+  domain.NotificationType:
+    enum:
+    - user_signup
+    - sheet_approval
+    type: string
+    x-enum-varnames:
+    - NotificationTypeUserSignup
+    - NotificationTypeSheetApproval
+  domain.PollAdminResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      options:
+        items:
+          type: string
+        type: array
+      participant:
+        type: integer
+      poll_type:
+        $ref: '#/definitions/domain.pollType'
+      title:
+        type: string
+      votes:
+        items:
+          type: integer
+        type: array
+    type: object
+  domain.PollClientRequest:
+    properties:
+      id:
+        type: string
+      votes:
+        items:
+          type: integer
+        type: array
+    type: object
+  domain.PollClientResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      options:
+        items:
+          type: string
+        type: array
+      poll_type:
+        $ref: '#/definitions/domain.pollType'
+      title:
+        type: string
+    type: object
+  domain.Profile:
+    properties:
+      age:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  domain.RefreshTokenResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  domain.Sheet:
+    properties:
+      approved_at:
+        type: string
+      approved_by:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      status:
+        $ref: '#/definitions/domain.SheetStatus'
+      title:
+        type: string
+      venue:
+        type: string
+    required:
+    - title
+    - venue
+    type: object
+  domain.SheetStatus:
+    enum:
+    - pending
+    - published
+    - rejected
+    type: string
+    x-enum-varnames:
+    - SheetStatusPending
+    - SheetStatusPublished
+    - SheetStatusRejected
+  domain.SignupResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  domain.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  domain.pollType:
+    enum:
+    - single_choice
+    - multi_choice
+    - slide
+    type: string
+    x-enum-varnames:
+    - singleChoice
+    - multiChoice
+    - slide
+info:
+  contact: {}
+  description: API documentation for the Poll service.
+  title: Poll Service API
+  version: "1.0"
+paths:
+  /api/v1/admin/fetch:
+    get:
+      description: Retrieve all polls created for a sheet.
+      parameters:
+      - description: Sheet identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.PollAdminResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List polls for sheet
+      tags:
+      - Polls (Admin)
+  /api/v1/client/fetch:
+    get:
+      description: Retrieve published polls for a sheet.
+      parameters:
+      - description: Sheet identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.PollClientResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Get polls for sheet
+      tags:
+      - Polls
+  /api/v1/create:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a poll associated with a sheet.
+      parameters:
+      - description: Sheet identifier
+        in: formData
+        name: sheet_id
+        required: true
+        type: string
+      - description: Poll title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Poll options
+        in: formData
+        items:
+          type: string
+        name: options
+        required: true
+        type: array
+      - description: Poll type
+        in: formData
+        name: poll_type
+        required: true
+        type: string
+      - description: Poll description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create poll
+      tags:
+      - Polls (Admin)
+  /api/v1/delete:
+    put:
+      description: Delete a poll by identifier.
+      parameters:
+      - description: Poll identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete poll
+      tags:
+      - Polls (Admin)
+  /api/v1/edit:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Update fields of an existing poll.
+      parameters:
+      - description: Poll identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Sheet identifier
+        in: formData
+        name: sheet_id
+        required: true
+        type: string
+      - description: Poll title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Poll options
+        in: formData
+        items:
+          type: string
+        name: options
+        required: true
+        type: array
+      - description: Poll type
+        in: formData
+        name: poll_type
+        required: true
+        type: string
+      - description: Poll description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update poll
+      tags:
+      - Polls (Admin)
+  /api/v1/login:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Authenticate a user using email and password and receive tokens.
+      parameters:
+      - description: Registered email address
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Login user
+      tags:
+      - Auth
+  /api/v1/poll/notifications:
+    get:
+      description: Retrieve pending notifications (super admin only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.NotificationResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List pending notifications
+      tags:
+      - Notifications
+  /api/v1/poll/notifications/{id}/approve:
+    post:
+      description: Approve a pending notification (super admin only).
+      parameters:
+      - description: Notification identifier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.NotificationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve notification
+      tags:
+      - Notifications
+  /api/v1/poll/notifications/{id}/reject:
+    post:
+      description: Reject a pending notification (super admin only).
+      parameters:
+      - description: Notification identifier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.NotificationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject notification
+      tags:
+      - Notifications
+  /api/v1/profile:
+    get:
+      description: Retrieve the profile for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Profile'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Profile
+  /api/v1/refresh:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Exchange an existing refresh token for a new access/refresh token
+        pair.
+      parameters:
+      - description: Refresh token when cookie is unavailable
+        in: formData
+        name: refreshToken
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.RefreshTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Refresh authentication tokens
+      tags:
+      - Auth
+  /api/v1/sheet/create:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new sheet (verified admin or super admin).
+      parameters:
+      - description: Sheet title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Sheet venue
+        in: formData
+        name: venue
+        required: true
+        type: string
+      - description: Sheet description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create sheet
+      tags:
+      - Sheets
+  /api/v1/sheet/delete:
+    put:
+      description: Delete a sheet by identifier.
+      parameters:
+      - description: Sheet identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete sheet
+      tags:
+      - Sheets
+  /api/v1/sheet/fetch:
+    get:
+      description: Retrieve sheets depending on admin role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Sheet'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List sheets
+      tags:
+      - Sheets
+  /api/v1/signup:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Register a new user and receive access and refresh tokens.
+      parameters:
+      - description: Full name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Phone number
+        in: formData
+        name: phone
+        required: true
+        type: string
+      - description: Organization name
+        in: formData
+        name: organization
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SignupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /api/v1/submit:
+    post:
+      consumes:
+      - application/json
+      description: Submit votes for a poll.
+      parameters:
+      - description: Votes payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PollClientRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Submit poll votes
+      tags:
+      - Polls
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
