@@ -78,34 +78,42 @@ func (_m *NotificationUsecase) CreateForSheet(ctx context.Context, sheet *domain
 	return r0
 }
 
-// FetchPending provides a mock function with given fields: ctx
-func (_m *NotificationUsecase) FetchPending(ctx context.Context) ([]domain.Notification, error) {
-	ret := _m.Called(ctx)
+// FetchPending provides a mock function with given fields: ctx, pagination
+func (_m *NotificationUsecase) FetchPending(ctx context.Context, pagination domain.PaginationQuery) ([]domain.Notification, int64, error) {
+	ret := _m.Called(ctx, pagination)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchPending")
 	}
 
 	var r0 []domain.Notification
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]domain.Notification, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) []domain.Notification); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.Notification); ok {
+		r0 = rf(ctx, pagination)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Notification)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+	if len(ret) > 1 {
+		if rf, ok := ret.Get(1).(func(context.Context, domain.PaginationQuery) int64); ok {
+			r1 = rf(ctx, pagination)
+		} else if ret.Get(1) != nil {
+			r1 = ret.Get(1).(int64)
+		}
 	}
 
-	return r0, r1
+	var r2 error
+	if len(ret) > 2 {
+		if rf, ok := ret.Get(2).(func(context.Context, domain.PaginationQuery) error); ok {
+			r2 = rf(ctx, pagination)
+		} else {
+			r2 = ret.Error(2)
+		}
+	}
+
+	return r0, r1, r2
 }
 
 // Reject provides a mock function with given fields: ctx, notificationID, adminID

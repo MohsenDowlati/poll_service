@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
@@ -63,6 +64,7 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		Password:     string(encryptedPassword),
 		Admin:        domain.NewUser,
 		IsVerified:   false,
+		CreatedAt:    time.Now(),
 	}
 
 	err = sc.SignupUsecase.Create(c, &user)

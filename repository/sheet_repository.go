@@ -8,6 +8,7 @@ import (
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type sheetRepository struct {
@@ -15,29 +16,42 @@ type sheetRepository struct {
 	collection string
 }
 
-func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string) ([]domain.Sheet, error) {
+func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
 	collection := sr.database.Collection(sr.collection)
 
 	UID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	cursor, err := collection.Find(ctx, bson.M{"userID": UID})
+	filter := bson.M{"userID": UID}
+	findOptions := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	if skip := pagination.Skip(); skip > 0 {
+		findOptions.SetSkip(skip)
+	}
+	if limit := pagination.Limit(); limit > 0 {
+		findOptions.SetLimit(limit)
+	}
+
+	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var result []domain.Sheet
 	if err = cursor.All(ctx, &result); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
 	if result == nil {
-		return []domain.Sheet{}, nil
+		result = []domain.Sheet{}
 	}
 
-	return result, nil
+	total, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return result, total, nil
 }
 
 func (sr *sheetRepository) GetByID(ctx context.Context, id string) (domain.Sheet, error) {
@@ -60,25 +74,36 @@ func (sr *sheetRepository) Create(ctx context.Context, sheet domain.Sheet) error
 	return err
 }
 
-func (sr *sheetRepository) GetAll(ctx context.Context) ([]domain.Sheet, error) {
+func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
 	collection := sr.database.Collection(sr.collection)
 
-	cursor, err := collection.Find(ctx, bson.D{})
+	findOptions := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	if skip := pagination.Skip(); skip > 0 {
+		findOptions.SetSkip(skip)
+	}
+	if limit := pagination.Limit(); limit > 0 {
+		findOptions.SetLimit(limit)
+	}
+
+	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var sheets []domain.Sheet
-
 	if err = cursor.All(ctx, &sheets); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
 	if sheets == nil {
-		return []domain.Sheet{}, nil
+		sheets = []domain.Sheet{}
 	}
 
-	return sheets, nil
+	total, err := collection.CountDocuments(ctx, bson.D{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return sheets, total, nil
 }
 
 func (sr *sheetRepository) Delete(ctx context.Context, id string) error {

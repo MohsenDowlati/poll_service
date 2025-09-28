@@ -69,33 +69,41 @@ func (_m *PollAdminUsecase) EditPoll(c context.Context, poll *domain.Poll) error
 }
 
 // GetBySheetID provides a mock function with given fields: c, sheetID
-func (_m *PollAdminUsecase) GetBySheetID(c context.Context, sheetID string) ([]domain.Poll, error) {
-	ret := _m.Called(c, sheetID)
+func (_m *PollAdminUsecase) GetBySheetID(c context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
+	ret := _m.Called(c, sheetID, pagination)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetBySheetID")
 	}
 
 	var r0 []domain.Poll
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.Poll, error)); ok {
-		return rf(c, sheetID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.Poll); ok {
-		r0 = rf(c, sheetID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Poll); ok {
+		r0 = rf(c, sheetID, pagination)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Poll)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(c, sheetID)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+	if len(ret) > 1 {
+		if rf, ok := ret.Get(1).(func(context.Context, string, domain.PaginationQuery) int64); ok {
+			r1 = rf(c, sheetID, pagination)
+		} else if ret.Get(1) != nil {
+			r1 = ret.Get(1).(int64)
+		}
 	}
 
-	return r0, r1
+	var r2 error
+	if len(ret) > 2 {
+		if rf, ok := ret.Get(2).(func(context.Context, string, domain.PaginationQuery) error); ok {
+			r2 = rf(c, sheetID, pagination)
+		} else {
+			r2 = ret.Error(2)
+		}
+	}
+
+	return r0, r1, r2
 }
 
 // NewPollAdminUsecase creates a new instance of PollAdminUsecase. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

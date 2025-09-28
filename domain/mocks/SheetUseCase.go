@@ -54,92 +54,130 @@ func (_m *SheetUseCase) Delete(c context.Context, id string) error {
 	return r0
 }
 
-// GetAll provides a mock function with given fields: c
-func (_m *SheetUseCase) GetAll(c context.Context) ([]domain.Sheet, error) {
-	ret := _m.Called(c)
+// GetAll provides a mock function with given fields: c, pagination
+func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+
+	ret := _m.Called(c, pagination)
 
 	if len(ret) == 0 {
+
 		panic("no return value specified for GetAll")
+
 	}
 
 	var r0 []domain.Sheet
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]domain.Sheet, error)); ok {
-		return rf(c)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) []domain.Sheet); ok {
-		r0 = rf(c)
+
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.Sheet); ok {
+
+		r0 = rf(c, pagination)
+
 	} else {
+
 		if ret.Get(0) != nil {
+
 			r0 = ret.Get(0).([]domain.Sheet)
+
 		}
+
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(c)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+
+	if len(ret) > 1 {
+
+		if rf, ok := ret.Get(1).(func(context.Context, domain.PaginationQuery) int64); ok {
+
+			r1 = rf(c, pagination)
+
+		} else if ret.Get(1) != nil {
+
+			r1 = ret.Get(1).(int64)
+
+		}
+
 	}
 
-	return r0, r1
-}
+	var r2 error
 
-// GetByID provides a mock function with given fields: c, id
-func (_m *SheetUseCase) GetByID(c context.Context, id string) (domain.Sheet, error) {
-	ret := _m.Called(c, id)
+	if len(ret) > 2 {
 
-	if len(ret) == 0 {
-		panic("no return value specified for GetByID")
+		if rf, ok := ret.Get(2).(func(context.Context, domain.PaginationQuery) error); ok {
+
+			r2 = rf(c, pagination)
+
+		} else {
+
+			r2 = ret.Error(2)
+
+		}
+
 	}
 
-	var r0 domain.Sheet
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (domain.Sheet, error)); ok {
-		return rf(c, id)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) domain.Sheet); ok {
-		r0 = rf(c, id)
-	} else {
-		r0 = ret.Get(0).(domain.Sheet)
-	}
+	return r0, r1, r2
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(c, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // GetByUserID provides a mock function with given fields: c, userID
-func (_m *SheetUseCase) GetByUserID(c context.Context, userID string) ([]domain.Sheet, error) {
-	ret := _m.Called(c, userID)
+func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+
+	ret := _m.Called(c, userID, pagination)
 
 	if len(ret) == 0 {
+
 		panic("no return value specified for GetByUserID")
+
 	}
 
 	var r0 []domain.Sheet
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.Sheet, error)); ok {
-		return rf(c, userID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.Sheet); ok {
-		r0 = rf(c, userID)
+
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Sheet); ok {
+
+		r0 = rf(c, userID, pagination)
+
 	} else {
+
 		if ret.Get(0) != nil {
+
 			r0 = ret.Get(0).([]domain.Sheet)
+
 		}
+
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(c, userID)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+
+	if len(ret) > 1 {
+
+		if rf, ok := ret.Get(1).(func(context.Context, string, domain.PaginationQuery) int64); ok {
+
+			r1 = rf(c, userID, pagination)
+
+		} else if ret.Get(1) != nil {
+
+			r1 = ret.Get(1).(int64)
+
+		}
+
 	}
 
-	return r0, r1
+	var r2 error
+
+	if len(ret) > 2 {
+
+		if rf, ok := ret.Get(2).(func(context.Context, string, domain.PaginationQuery) error); ok {
+
+			r2 = rf(c, userID, pagination)
+
+		} else {
+
+			r2 = ret.Error(2)
+
+		}
+
+	}
+
+	return r0, r1, r2
+
 }
 
 // UpdateStatus provides a mock function with given fields: c, id, status, approvedBy, approvedAt

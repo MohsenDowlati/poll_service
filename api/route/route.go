@@ -25,4 +25,5 @@ func Setup(env *bootstrap.Env, timeout time.Duration, db mongo.Database, gin *gi
 	NewAdminPollRouter(env, timeout, db, protectedRouter)
 	NewNotificationRouter(env, timeout, db, protectedRouter)
 	NewSheetRouter(env, db, timeout, protectedRouter)
+	NewAdminRouter(env, timeout, db, protectedRouter)
 }

@@ -17,7 +17,7 @@ func (su *signupUsecase) GetUserByPhone(c context.Context, phone string) (domain
 	ctx, cancel := context.WithTimeout(c, su.contextTimeout)
 	defer cancel()
 
-	return su.GetUserByPhone(ctx, phone)
+	return su.userRepository.GetByPhone(ctx, phone)
 }
 
 func NewSignupUsecase(userRepository domain.UserRepository, timeout time.Duration) domain.SignupUsecase {

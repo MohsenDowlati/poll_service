@@ -45,15 +45,25 @@ func (pcc *PollClientController) Submit(c *gin.Context) {
 // @Tags Polls
 // @Produce json
 // @Param id query string true "Sheet identifier"
-// @Success 200 {array} domain.PollClientResponse
+// @Param page query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} domain.PollClientListResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/client/fetch [get]
 func (pcc *PollClientController) Fetch(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
+	if id == "" {
+		id = c.Param("id")
+	}
 
-	var polls []domain.Poll
+	if id == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "sheet id is required"})
+		return
+	}
 
-	polls, err := pcc.PollClientUsecse.GetBySheetID(c, id)
+	pagination := extractPagination(c)
+
+	polls, total, err := pcc.PollClientUsecse.GetBySheetID(c, id, pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
@@ -70,5 +80,11 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 			Description: poll.Description,
 		})
 	}
-	c.JSON(http.StatusOK, result)
+
+	response := domain.PollClientListResponse{
+		Data:       result,
+		Pagination: domain.NewPaginationResult(pagination, total),
+	}
+
+	c.JSON(http.StatusOK, response)
 }

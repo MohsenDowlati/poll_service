@@ -15,6 +15,12 @@ type userRepository struct {
 	collection string
 }
 
+func (ur *userRepository) DeleteUser(c context.Context, id string) error {
+	collection := ur.database.Collection(ur.collection)
+	_, err := collection.DeleteOne(c, bson.M{"_id": id})
+	return err
+}
+
 func (ur *userRepository) GetByPhone(c context.Context, phone string) (domain.User, error) {
 	collection := ur.database.Collection(ur.collection)
 	var user domain.User
@@ -53,24 +59,36 @@ func (ur *userRepository) Create(c context.Context, user *domain.User) error {
 	return err
 }
 
-func (ur *userRepository) Fetch(c context.Context) ([]domain.User, error) {
+func (ur *userRepository) Fetch(c context.Context, pagination domain.PaginationQuery) ([]domain.User, int64, error) {
 	collection := ur.database.Collection(ur.collection)
 
-	opts := options.Find().SetProjection(bson.D{{Key: "password", Value: 0}})
-	cursor, err := collection.Find(c, bson.D{}, opts)
+	findOptions := options.Find().SetProjection(bson.D{{Key: "password", Value: 0}})
+	if skip := pagination.Skip(); skip > 0 {
+		findOptions.SetSkip(skip)
+	}
+	if limit := pagination.Limit(); limit > 0 {
+		findOptions.SetLimit(limit)
+	}
 
+	cursor, err := collection.Find(c, bson.D{}, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var users []domain.User
-
-	err = cursor.All(c, &users)
+	if err = cursor.All(c, &users); err != nil {
+		return nil, 0, err
+	}
 	if users == nil {
-		return []domain.User{}, err
+		users = []domain.User{}
 	}
 
-	return users, err
+	total, err := collection.CountDocuments(c, bson.D{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
 func (ur *userRepository) GetByEmail(c context.Context, email string) (domain.User, error) {

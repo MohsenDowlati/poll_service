@@ -2,7 +2,9 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
@@ -14,19 +16,18 @@ import (
 type SheetController struct {
 	SheetuseCase        domain.SheetUseCase
 	NotificationUsecase domain.NotificationUsecase
+	PollUsecase         domain.PollAdminUsecase
 }
 
 // Create registers a new sheet.
 // @Summary Create sheet
 // @Description Create a new sheet (verified admin or super admin).
 // @Tags Sheets
-// @Accept mpfd
+// @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param title formData string true "Sheet title"
-// @Param venue formData string true "Sheet venue"
-// @Param description formData string false "Sheet description"
-// @Success 201 {object} domain.SuccessResponse
+// @Param payload body domain.SheetCreateRequest true "Sheet creation payload"
+// @Success 201 {object} domain.SheetCreateResponse
 // @Failure 400 {object} domain.ErrorResponse
 // @Failure 401 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
@@ -40,11 +41,68 @@ func (sc *SheetController) Create(c *gin.Context) {
 		return
 	}
 
-	var sheet domain.Sheet
+	var payload domain.SheetCreateRequest
 
-	if err := c.ShouldBind(&sheet); err != nil {
+	if err := c.ShouldBind(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
 		return
+	}
+
+	title := strings.TrimSpace(payload.EffectiveTitle())
+	if title == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "title is required"})
+		return
+	}
+
+	venue := strings.TrimSpace(payload.Venue)
+	if venue == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "venue is required"})
+		return
+	}
+
+	description := strings.TrimSpace(payload.Description)
+
+	validatedPolls := make([]domain.Poll, 0, len(payload.Polls))
+	for idx, pollReq := range payload.Polls {
+		pollTitle := strings.TrimSpace(pollReq.Title)
+		if pollTitle == "" {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: fmt.Sprintf("poll %d title is required", idx+1)})
+			return
+		}
+
+		trimmedOptions := make([]string, 0, len(pollReq.Options))
+		for _, opt := range pollReq.Options {
+			optionValue := strings.TrimSpace(opt)
+			if optionValue != "" {
+				trimmedOptions = append(trimmedOptions, optionValue)
+			}
+		}
+
+		pollType, err := domain.ParsePollType(strings.ToLower(strings.TrimSpace(pollReq.PollType)))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: fmt.Sprintf("poll %d has invalid type", idx+1)})
+			return
+		}
+
+		minOptions := 2
+		if string(pollType) == "slide" {
+			minOptions = 1
+		}
+		if len(trimmedOptions) < minOptions {
+			message := fmt.Sprintf("poll %d requires at least %d option", idx+1, minOptions)
+			if minOptions > 1 {
+				message += "s"
+			}
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: message})
+			return
+		}
+
+		validatedPolls = append(validatedPolls, domain.Poll{
+			Title:       pollTitle,
+			Description: strings.TrimSpace(pollReq.Description),
+			Options:     trimmedOptions,
+			PollType:    pollType,
+		})
 	}
 
 	ownerID, err := primitive.ObjectIDFromHex(userID)
@@ -55,10 +113,16 @@ func (sc *SheetController) Create(c *gin.Context) {
 
 	now := time.Now()
 
-	sheet.ID = primitive.NewObjectID()
-	sheet.UserID = ownerID
-	sheet.CreatedAt = now
-	sheet.UpdatedAt = now
+	sheet := domain.Sheet{
+		ID:              primitive.NewObjectID(),
+		UserID:          ownerID,
+		Title:           title,
+		Venue:           venue,
+		Description:     description,
+		IsPhoneRequired: payload.IsPhoneRequired,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
 
 	if userType == domain.SuperAdmin {
 		sheet.Status = domain.SheetStatusPublished
@@ -71,6 +135,49 @@ func (sc *SheetController) Create(c *gin.Context) {
 	if err = sc.SheetuseCase.Create(c, sheet); err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
+	}
+
+	var (
+		createdPolls   []domain.PollAdminResponse
+		createdPollIDs []string
+	)
+
+	if len(validatedPolls) > 0 {
+		if sc.PollUsecase == nil {
+			_ = sc.SheetuseCase.Delete(c, sheet.ID.Hex())
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "poll creation not configured"})
+			return
+		}
+
+		for _, pollTemplate := range validatedPolls {
+			poll := pollTemplate
+			poll.ID = primitive.NewObjectID()
+			poll.SheetID = sheet.ID
+			poll.Participant = 0
+			poll.Votes = make([]int, len(poll.Options))
+			poll.CreatedAt = now
+			poll.UpdatedAt = now
+
+			if err = sc.PollUsecase.CreatePoll(c, &poll); err != nil {
+				for _, pollID := range createdPollIDs {
+					_ = sc.PollUsecase.Delete(c, pollID)
+				}
+				_ = sc.SheetuseCase.Delete(c, sheet.ID.Hex())
+				c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+				return
+			}
+
+			createdPollIDs = append(createdPollIDs, poll.ID.Hex())
+			createdPolls = append(createdPolls, domain.PollAdminResponse{
+				ID:          poll.ID.Hex(),
+				Title:       poll.Title,
+				Options:     poll.Options,
+				PollType:    poll.PollType,
+				Participant: poll.Participant,
+				Votes:       poll.Votes,
+				Description: poll.Description,
+			})
+		}
 	}
 
 	if userType == domain.VerifiedAdmin && sc.NotificationUsecase != nil {
@@ -87,7 +194,11 @@ func (sc *SheetController) Create(c *gin.Context) {
 		message = "sheet published"
 	}
 
-	c.JSON(http.StatusCreated, domain.SuccessResponse{Message: message})
+	c.JSON(http.StatusCreated, domain.SheetCreateResponse{
+		Message: message,
+		Sheet:   sheet,
+		Polls:   createdPolls,
+	})
 }
 
 // Fetch lists sheets for the authenticated admin.
@@ -96,7 +207,9 @@ func (sc *SheetController) Create(c *gin.Context) {
 // @Tags Sheets
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} domain.Sheet
+// @Param page query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} domain.SheetListResponse
 // @Failure 401 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/sheet/fetch [get]
@@ -109,16 +222,19 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 		return
 	}
 
+	pagination := extractPagination(c)
+
 	var (
 		sheets []domain.Sheet
+		total  int64
 		err    error
 	)
 
 	switch userType {
 	case domain.SuperAdmin:
-		sheets, err = sc.SheetuseCase.GetAll(c)
+		sheets, total, err = sc.SheetuseCase.GetAll(c, pagination)
 	case domain.VerifiedAdmin:
-		sheets, err = sc.SheetuseCase.GetByUserID(c, userID)
+		sheets, total, err = sc.SheetuseCase.GetByUserID(c, userID, pagination)
 	default:
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
 		return
@@ -129,7 +245,12 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, sheets)
+	response := domain.SheetListResponse{
+		Data:       sheets,
+		Pagination: domain.NewPaginationResult(pagination, total),
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (sc *SheetController) FetchByID(c *gin.Context) {

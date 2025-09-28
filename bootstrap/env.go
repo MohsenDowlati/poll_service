@@ -22,6 +22,7 @@ type Env struct {
 	CookieDomain           string `mapstructure:"COOKIE_DOMAIN"`
 	CookieSecure           bool   `mapstructure:"COOKIE_SECURE"`
 	CookieSameSite         string `mapstructure:"COOKIE_SAME_SITE"`
+	CORSAllowedOrigins     string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 	SuperAdminPhone        string `mapstructure:"SUPER_ADMIN_PHONE"`
 	SuperAdminPassword     string `mapstructure:"SUPER_ADMIN_PASSWORD"`
 	SuperAdminName         string `mapstructure:"SUPER_ADMIN_NAME"`

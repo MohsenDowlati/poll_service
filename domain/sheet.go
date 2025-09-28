@@ -18,22 +18,52 @@ const (
 )
 
 type Sheet struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID      primitive.ObjectID `bson:"userID" json:"-"`
-	Title       string             `bson:"title" form:"title" binding:"required" json:"title"`
-	Venue       string             `bson:"venue" form:"venue" binding:"required" json:"venue"`
-	Description string             `bson:"description" form:"description" json:"description"`
-	Status      SheetStatus        `bson:"status" json:"status"`
-	ApprovedBy  primitive.ObjectID `bson:"approvedBy,omitempty" json:"approved_by,omitempty"`
-	ApprovedAt  time.Time          `bson:"approvedAt,omitempty" json:"approved_at,omitempty"`
-	CreatedAt   time.Time          `bson:"createdAt" json:"-"`
-	UpdatedAt   time.Time          `bson:"updatedAt" json:"-"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID          primitive.ObjectID `bson:"userID" json:"-"`
+	Title           string             `bson:"title" form:"title" binding:"required" json:"title"`
+	Venue           string             `bson:"venue" form:"venue" binding:"required" json:"venue"`
+	Description     string             `bson:"description" form:"description" json:"description"`
+	Status          SheetStatus        `bson:"status" json:"status"`
+	IsPhoneRequired bool               `bson:"isPhoneRequired" form:"is_phone_required" json:"is_phone_required"`
+	ApprovedBy      primitive.ObjectID `bson:"approvedBy,omitempty" json:"approved_by,omitempty"`
+	ApprovedAt      time.Time          `bson:"approvedAt,omitempty" json:"approved_at,omitempty"`
+	CreatedAt       time.Time          `bson:"createdAt" json:"-"`
+	UpdatedAt       time.Time          `bson:"updatedAt" json:"-"`
+}
+
+type SheetCreatePoll struct {
+	Title       string   `json:"title" form:"title"`
+	Description string   `json:"description,omitempty" form:"description"`
+	Options     []string `json:"options" form:"options"`
+	PollType    string   `json:"poll_type" form:"poll_type"`
+}
+
+type SheetCreateRequest struct {
+	Title           string            `json:"title" form:"title"`
+	Name            string            `json:"name,omitempty" form:"name"`
+	Venue           string            `json:"venue" form:"venue"`
+	Description     string            `json:"description,omitempty" form:"description"`
+	IsPhoneRequired bool              `json:"is_phone_required" form:"is_phone_required"`
+	Polls           []SheetCreatePoll `json:"polls" form:"polls"`
+}
+
+type SheetCreateResponse struct {
+	Message string              `json:"message"`
+	Sheet   Sheet               `json:"sheet"`
+	Polls   []PollAdminResponse `json:"polls,omitempty"`
+}
+
+func (r SheetCreateRequest) EffectiveTitle() string {
+	if r.Title != "" {
+		return r.Title
+	}
+	return r.Name
 }
 
 type SheetRepository interface {
 	Create(ctx context.Context, sheet Sheet) error
-	GetAll(ctx context.Context) ([]Sheet, error)
-	GetByUserID(ctx context.Context, userID string) ([]Sheet, error)
+	GetAll(ctx context.Context, pagination PaginationQuery) ([]Sheet, int64, error)
+	GetByUserID(ctx context.Context, userID string, pagination PaginationQuery) ([]Sheet, int64, error)
 	Delete(ctx context.Context, id string) error
 	GetByID(ctx context.Context, id string) (Sheet, error)
 	UpdateStatus(ctx context.Context, id string, status SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error
@@ -41,9 +71,9 @@ type SheetRepository interface {
 
 type SheetUseCase interface {
 	Create(c context.Context, sheet Sheet) error
-	GetAll(c context.Context) ([]Sheet, error)
+	GetAll(c context.Context, pagination PaginationQuery) ([]Sheet, int64, error)
 	Delete(c context.Context, id string) error
-	GetByUserID(c context.Context, userID string) ([]Sheet, error)
+	GetByUserID(c context.Context, userID string, pagination PaginationQuery) ([]Sheet, int64, error)
 	GetByID(c context.Context, id string) (Sheet, error)
 	UpdateStatus(c context.Context, id string, status SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error
 }

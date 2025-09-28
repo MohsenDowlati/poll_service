@@ -141,25 +141,35 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id query string true "Sheet identifier"
-// @Success 200 {array} domain.PollAdminResponse
+// @Param page query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} domain.PollAdminListResponse
 // @Failure 401 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/admin/fetch [get]
 func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
+	if id == "" {
+		id = c.Param("id")
+	}
 
-	var polls []domain.Poll
+	if id == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "sheet id is required"})
+		return
+	}
 
-	polls, err := pc.PollAdminUsecase.GetBySheetID(c, id)
+	pagination := extractPagination(c)
+
+	polls, total, err := pc.PollAdminUsecase.GetBySheetID(c, id, pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	var response []domain.PollAdminResponse
+	var responseItems []domain.PollAdminResponse
 
 	for _, poll := range polls {
-		response = append(response, domain.PollAdminResponse{
+		responseItems = append(responseItems, domain.PollAdminResponse{
 			ID:          poll.ID.Hex(),
 			Title:       poll.Title,
 			Options:     poll.Options,
@@ -168,6 +178,11 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 			Votes:       poll.Votes,
 			Description: poll.Description,
 		})
+	}
+
+	response := domain.PollAdminListResponse{
+		Data:       responseItems,
+		Pagination: domain.NewPaginationResult(pagination, total),
 	}
 
 	c.JSON(http.StatusOK, response)

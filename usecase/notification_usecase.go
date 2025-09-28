@@ -65,11 +65,11 @@ func (nu *notificationUsecase) CreateForSheet(c context.Context, sheet *domain.S
 	return nu.notificationRepository.Create(ctx, &notification)
 }
 
-func (nu *notificationUsecase) FetchPending(c context.Context) ([]domain.Notification, error) {
+func (nu *notificationUsecase) FetchPending(c context.Context, pagination domain.PaginationQuery) ([]domain.Notification, int64, error) {
 	ctx, cancel := context.WithTimeout(c, nu.contextTimeout)
 	defer cancel()
 
-	return nu.notificationRepository.FetchPending(ctx)
+	return nu.notificationRepository.FetchPending(ctx, pagination)
 }
 
 func (nu *notificationUsecase) Approve(c context.Context, notificationID string, adminID string) (domain.Notification, error) {

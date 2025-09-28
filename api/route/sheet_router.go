@@ -16,10 +16,12 @@ func NewSheetRouter(env *bootstrap.Env, db mongo.Database, contextTimeout time.D
 	sr := repository.NewSheetRepository(db, domain.CollectionSheet)
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	nr := repository.NewNotificationRepository(db, domain.CollectionNotification)
+	pr := repository.NewPollRepository(db, domain.CollectionPoll)
 
 	sc := controller.SheetController{
 		SheetuseCase:        usecase.NewSheetUseCase(sr, contextTimeout),
 		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, sr, contextTimeout),
+		PollUsecase:         usecase.NewPollAdminUsecase(pr, contextTimeout),
 	}
 
 	group.POST("/sheet/create", sc.Create)

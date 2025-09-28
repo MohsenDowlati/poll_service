@@ -30,16 +30,76 @@
                         "name": "id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.PollAdminResponse"
-                            }
+                            "$ref": "#/definitions/domain.PollAdminListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve users with pagination (super admin only).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.UserListResponse"
                         }
                     },
                     "401": {
@@ -74,16 +134,25 @@
                         "name": "id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.PollClientResponse"
-                            }
+                            "$ref": "#/definitions/domain.PollClientListResponse"
                         }
                     },
                     "500": {
@@ -392,14 +461,25 @@
                     "Notifications"
                 ],
                 "summary": "List pending notifications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.NotificationResponse"
-                            }
+                            "$ref": "#/definitions/domain.NotificationListResponse"
                         }
                     },
                     "401": {
@@ -610,7 +690,7 @@
                 ],
                 "description": "Create a new sheet (verified admin or super admin).",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -621,31 +701,20 @@
                 "summary": "Create sheet",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Sheet title",
-                        "name": "title",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sheet venue",
-                        "name": "venue",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sheet description",
-                        "name": "description",
-                        "in": "formData"
+                        "description": "Sheet creation payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SheetCreateRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/domain.SheetCreateResponse"
                         }
                     },
                     "400": {
@@ -742,14 +811,25 @@
                     "Sheets"
                 ],
                 "summary": "List sheets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.Sheet"
-                            }
+                            "$ref": "#/definitions/domain.SheetListResponse"
                         }
                     },
                     "401": {
@@ -899,6 +979,20 @@
                 }
             }
         },
+        "domain.NotificationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.NotificationResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/domain.PaginationResult"
+                }
+            }
+        },
         "domain.NotificationResponse": {
             "type": "object",
             "properties": {
@@ -970,6 +1064,37 @@
                 "NotificationTypeSheetApproval"
             ]
         },
+        "domain.PaginationResult": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.PollAdminListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PollAdminResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/domain.PaginationResult"
+                }
+            }
+        },
         "domain.PollAdminResponse": {
             "type": "object",
             "properties": {
@@ -999,6 +1124,20 @@
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "domain.PollClientListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PollClientResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/domain.PaginationResult"
                 }
             }
         },
@@ -1083,6 +1222,9 @@
                 "id": {
                     "type": "string"
                 },
+                "is_phone_required": {
+                    "type": "boolean"
+                },
                 "status": {
                     "$ref": "#/definitions/domain.SheetStatus"
                 },
@@ -1091,6 +1233,83 @@
                 },
                 "venue": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.SheetCreatePoll": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "poll_type": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SheetCreateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "is_phone_required": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "polls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.SheetCreatePoll"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "venue": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SheetCreateResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "polls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PollAdminResponse"
+                    }
+                },
+                "sheet": {
+                    "$ref": "#/definitions/domain.Sheet"
+                }
+            }
+        },
+        "domain.SheetListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Sheet"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/domain.PaginationResult"
                 }
             }
         },
@@ -1125,6 +1344,58 @@
                     "type": "string"
                 }
             }
+        },
+        "domain.UserListItem": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "$ref": "#/definitions/domain.UserType"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.UserListItem"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/domain.PaginationResult"
+                }
+            }
+        },
+        "domain.UserType": {
+            "type": "string",
+            "enum": [
+                "super_admin",
+                "verified_admin",
+                "new_user",
+                "canceled_user"
+            ],
+            "x-enum-varnames": [
+                "SuperAdmin",
+                "VerifiedAdmin",
+                "NewUser",
+                "CanceledUser"
+            ]
         },
         "domain.pollType": {
             "type": "string",

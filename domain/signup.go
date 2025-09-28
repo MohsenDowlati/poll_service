@@ -5,10 +5,10 @@ import (
 )
 
 type SignupRequest struct {
-	Name         string `form:"name" binding:"required"`
-	Phone        string `form:"phone" binding:"required,phone"`
-	Organization string `form:"organization" binding:"required"`
-	Password     string `form:"password" binding:"required"`
+	Name         string `json:"name" form:"name" binding:"required"`
+	Phone        string `json:"phone" form:"phone" binding:"required,phone"`
+	Organization string `json:"organization" form:"organization" binding:"required"`
+	Password     string `json:"password" form:"password" binding:"required"`
 }
 
 type SignupResponse struct {

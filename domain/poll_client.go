@@ -16,6 +16,6 @@ type PollClientResponse struct {
 }
 
 type PollClientUsecase interface {
-	GetBySheetID(c context.Context, sheetID string) ([]Poll, error)
+	GetBySheetID(c context.Context, sheetID string, pagination PaginationQuery) ([]Poll, int64, error)
 	SubmitVote(c context.Context, id string, votes []int) error
 }

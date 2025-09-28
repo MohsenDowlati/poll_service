@@ -2,8 +2,10 @@ package domain
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"fmt"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const CollectionPoll = "polls"
@@ -15,6 +17,19 @@ const (
 	multiChoice  pollType = "multi_choice"
 	slide        pollType = "slide"
 )
+
+func ParsePollType(value string) (pollType, error) {
+	switch value {
+	case "", string(singleChoice):
+		return singleChoice, nil
+	case string(multiChoice):
+		return multiChoice, nil
+	case string(slide):
+		return slide, nil
+	default:
+		return "", fmt.Errorf("invalid poll type: %s", value)
+	}
+}
 
 type Poll struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
@@ -31,7 +46,7 @@ type Poll struct {
 
 type PollRepository interface {
 	Create(ctx context.Context, poll *Poll) error
-	GetPollBySheetID(ctx context.Context, sheetID string) (poll []Poll, err error)
+	GetPollBySheetID(ctx context.Context, sheetID string, pagination PaginationQuery) ([]Poll, int64, error)
 	EditPoll(ctx context.Context, poll *Poll) error
 	SubmitVote(ctx context.Context, id string, votes []int) error
 	Delete(ctx context.Context, id string) error

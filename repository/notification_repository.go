@@ -29,27 +29,37 @@ func (nr *notificationRepository) Create(ctx context.Context, notification *doma
 	return err
 }
 
-func (nr *notificationRepository) FetchPending(ctx context.Context) ([]domain.Notification, error) {
+func (nr *notificationRepository) FetchPending(ctx context.Context, pagination domain.PaginationQuery) ([]domain.Notification, int64, error) {
 	collection := nr.database.Collection(nr.collection)
 
 	filter := bson.M{"status": domain.NotificationPending}
-	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	findOptions := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	if skip := pagination.Skip(); skip > 0 {
+		findOptions.SetSkip(skip)
+	}
+	if limit := pagination.Limit(); limit > 0 {
+		findOptions.SetLimit(limit)
+	}
 
-	cursor, err := collection.Find(ctx, filter, opts)
+	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var notifications []domain.Notification
 	if err = cursor.All(ctx, &notifications); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
 	if notifications == nil {
-		return []domain.Notification{}, nil
+		notifications = []domain.Notification{}
 	}
 
-	return notifications, nil
+	total, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return notifications, total, nil
 }
 
 func (nr *notificationRepository) GetByID(ctx context.Context, id string) (domain.Notification, error) {

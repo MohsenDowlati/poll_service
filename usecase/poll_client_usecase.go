@@ -19,14 +19,11 @@ func (p pollClientUsecase) SubmitVote(c context.Context, id string, votes []int)
 	return err
 }
 
-func (p pollClientUsecase) GetBySheetID(c context.Context, sheetID string) ([]domain.Poll, error) {
+func (p pollClientUsecase) GetBySheetID(c context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
 	defer cancel()
 
-	var polls []domain.Poll
-	polls, err := p.repository.GetPollBySheetID(ctx, sheetID)
-
-	return polls, err
+	return p.repository.GetPollBySheetID(ctx, sheetID, pagination)
 }
 
 func NewPollClientUsecase(repo domain.PollRepository, timeout time.Duration) domain.PollClientUsecase {

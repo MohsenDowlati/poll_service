@@ -69,33 +69,41 @@ func (_m *PollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 }
 
 // GetPollBySheetID provides a mock function with given fields: ctx, sheetID
-func (_m *PollRepository) GetPollBySheetID(ctx context.Context, sheetID string) ([]domain.Poll, error) {
-	ret := _m.Called(ctx, sheetID)
+func (_m *PollRepository) GetPollBySheetID(ctx context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
+	ret := _m.Called(ctx, sheetID, pagination)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetPollBySheetID")
 	}
 
 	var r0 []domain.Poll
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.Poll, error)); ok {
-		return rf(ctx, sheetID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.Poll); ok {
-		r0 = rf(ctx, sheetID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Poll); ok {
+		r0 = rf(ctx, sheetID, pagination)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Poll)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, sheetID)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+	if len(ret) > 1 {
+		if rf, ok := ret.Get(1).(func(context.Context, string, domain.PaginationQuery) int64); ok {
+			r1 = rf(ctx, sheetID, pagination)
+		} else if ret.Get(1) != nil {
+			r1 = ret.Get(1).(int64)
+		}
 	}
 
-	return r0, r1
+	var r2 error
+	if len(ret) > 2 {
+		if rf, ok := ret.Get(2).(func(context.Context, string, domain.PaginationQuery) error); ok {
+			r2 = rf(ctx, sheetID, pagination)
+		} else {
+			r2 = ret.Error(2)
+		}
+	}
+
+	return r0, r1, r2
 }
 
 // SubmitVote provides a mock function with given fields: ctx, id, votes

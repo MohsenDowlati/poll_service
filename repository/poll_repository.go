@@ -7,6 +7,7 @@ import (
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -34,23 +35,42 @@ func (pr *pollRepository) Create(ctx context.Context, poll *domain.Poll) error {
 	return err
 }
 
-func (pr *pollRepository) GetPollBySheetID(ctx context.Context, sheetID string) (poll []domain.Poll, err error) {
+func (pr *pollRepository) GetPollBySheetID(ctx context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 	collection := pr.database.Collection(pr.collection)
-	var polls []domain.Poll
 
 	idHex, err := primitive.ObjectIDFromHex(sheetID)
 	if err != nil {
-		return polls, err
+		return nil, 0, err
 	}
 
-	cursor, err := collection.Find(ctx, bson.D{{"sheetID", idHex}})
+	filter := bson.M{"sheetID": idHex}
+	findOptions := options.Find()
+	if skip := pagination.Skip(); skip > 0 {
+		findOptions.SetSkip(skip)
+	}
+	if limit := pagination.Limit(); limit > 0 {
+		findOptions.SetLimit(limit)
+	}
 
-	err = cursor.All(ctx, &polls)
+	cursor, err := collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, 0, err
+	}
 
+	var polls []domain.Poll
+	if err = cursor.All(ctx, &polls); err != nil {
+		return nil, 0, err
+	}
 	if polls == nil {
-		return []domain.Poll{}, nil
+		polls = []domain.Poll{}
 	}
-	return polls, err
+
+	total, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return polls, total, nil
 }
 
 func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error {

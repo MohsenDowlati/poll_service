@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -28,14 +29,17 @@ type User struct {
 	IsVerified   bool               `bson:"isVerified"`
 	Organization string             `bson:"organization"`
 	Admin        UserType           `bson:"admin"`
+	CreatedAt    time.Time          `bson:"createdAt"`
+	UpdateAT     time.Time
 }
 
 type UserRepository interface {
 	Create(c context.Context, user *User) error
-	Fetch(c context.Context) ([]User, error)
+	Fetch(c context.Context, pagination PaginationQuery) ([]User, int64, error)
 	GetByEmail(c context.Context, email string) (User, error)
 	GetByID(c context.Context, id string) (User, error)
 	GetByPhone(c context.Context, phone string) (User, error)
 	VerifyUser(c context.Context, id string) error
 	UpdateAdminStatus(c context.Context, id string, admin UserType, isVerified bool) error
+	DeleteUser(c context.Context, id string) error
 }

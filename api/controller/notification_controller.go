@@ -18,7 +18,9 @@ type NotificationController struct {
 // @Tags Notifications
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} domain.NotificationResponse
+// @Param page query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} domain.NotificationListResponse
 // @Failure 401 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/poll/notifications [get]
@@ -28,15 +30,22 @@ func (nc *NotificationController) FetchPending(c *gin.Context) {
 		return
 	}
 
-	notifications, err := nc.NotificationUsecase.FetchPending(c)
+	pagination := extractPagination(c)
+
+	notifications, total, err := nc.NotificationUsecase.FetchPending(c, pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	var response []domain.NotificationResponse
+	var responseItems []domain.NotificationResponse
 	for _, notification := range notifications {
-		response = append(response, mapNotificationToResponse(notification))
+		responseItems = append(responseItems, mapNotificationToResponse(notification))
+	}
+
+	response := domain.NotificationListResponse{
+		Data:       responseItems,
+		Pagination: domain.NewPaginationResult(pagination, total),
 	}
 
 	c.JSON(http.StatusOK, response)

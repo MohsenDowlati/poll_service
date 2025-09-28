@@ -16,5 +16,6 @@ type AdminResponse struct {
 
 type AdminUsecase interface {
 	VerifyUser(c context.Context, userID string, isVerified bool) error
-	Fetch(c context.Context) ([]User, error)
+	Fetch(c context.Context, pagination PaginationQuery) ([]User, int64, error)
+	Delete(c context.Context, userID string) error
 }

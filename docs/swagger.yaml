@@ -12,6 +12,15 @@ definitions:
       refreshToken:
         type: string
     type: object
+  domain.NotificationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.NotificationResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/domain.PaginationResult'
+    type: object
   domain.NotificationResponse:
     properties:
       created_at:
@@ -61,6 +70,26 @@ definitions:
     x-enum-varnames:
     - NotificationTypeUserSignup
     - NotificationTypeSheetApproval
+  domain.PaginationResult:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  domain.PollAdminListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.PollAdminResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/domain.PaginationResult'
+    type: object
   domain.PollAdminResponse:
     properties:
       description:
@@ -81,6 +110,15 @@ definitions:
         items:
           type: integer
         type: array
+    type: object
+  domain.PollClientListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.PollClientResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/domain.PaginationResult'
     type: object
   domain.PollClientRequest:
     properties:
@@ -132,6 +170,8 @@ definitions:
         type: string
       id:
         type: string
+      is_phone_required:
+        type: boolean
       status:
         $ref: '#/definitions/domain.SheetStatus'
       title:
@@ -141,6 +181,56 @@ definitions:
     required:
     - title
     - venue
+    type: object
+  domain.SheetCreatePoll:
+    properties:
+      description:
+        type: string
+      options:
+        items:
+          type: string
+        type: array
+      poll_type:
+        type: string
+      title:
+        type: string
+    type: object
+  domain.SheetCreateRequest:
+    properties:
+      description:
+        type: string
+      is_phone_required:
+        type: boolean
+      name:
+        type: string
+      polls:
+        items:
+          $ref: '#/definitions/domain.SheetCreatePoll'
+        type: array
+      title:
+        type: string
+      venue:
+        type: string
+    type: object
+  domain.SheetCreateResponse:
+    properties:
+      message:
+        type: string
+      polls:
+        items:
+          $ref: '#/definitions/domain.PollAdminResponse'
+        type: array
+      sheet:
+        $ref: '#/definitions/domain.Sheet'
+    type: object
+  domain.SheetListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Sheet'
+        type: array
+      pagination:
+        $ref: '#/definitions/domain.PaginationResult'
     type: object
   domain.SheetStatus:
     enum:
@@ -164,6 +254,42 @@ definitions:
       message:
         type: string
     type: object
+  domain.UserListItem:
+    properties:
+      admin:
+        $ref: '#/definitions/domain.UserType'
+      id:
+        type: string
+      is_verified:
+        type: boolean
+      name:
+        type: string
+      organization:
+        type: string
+      phone:
+        type: string
+    type: object
+  domain.UserListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.UserListItem'
+        type: array
+      pagination:
+        $ref: '#/definitions/domain.PaginationResult'
+    type: object
+  domain.UserType:
+    enum:
+    - super_admin
+    - verified_admin
+    - new_user
+    - canceled_user
+    type: string
+    x-enum-varnames:
+    - SuperAdmin
+    - VerifiedAdmin
+    - NewUser
+    - CanceledUser
   domain.pollType:
     enum:
     - single_choice
@@ -189,15 +315,21 @@ paths:
         name: id
         required: true
         type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/domain.PollAdminResponse'
-            type: array
+            $ref: '#/definitions/domain.PollAdminListResponse'
         "401":
           description: Unauthorized
           schema:
@@ -211,6 +343,38 @@ paths:
       summary: List polls for sheet
       tags:
       - Polls (Admin)
+  /api/v1/admin/users:
+    get:
+      description: Retrieve users with pagination (super admin only).
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.UserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - Users
   /api/v1/client/fetch:
     get:
       description: Retrieve published polls for a sheet.
@@ -220,15 +384,21 @@ paths:
         name: id
         required: true
         type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/domain.PollClientResponse'
-            type: array
+            $ref: '#/definitions/domain.PollClientListResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -425,15 +595,22 @@ paths:
   /api/v1/poll/notifications:
     get:
       description: Retrieve pending notifications (super admin only).
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/domain.NotificationResponse'
-            type: array
+            $ref: '#/definitions/domain.NotificationListResponse'
         "401":
           description: Unauthorized
           schema:
@@ -568,30 +745,22 @@ paths:
   /api/v1/sheet/create:
     post:
       consumes:
-      - multipart/form-data
+      - application/json
       description: Create a new sheet (verified admin or super admin).
       parameters:
-      - description: Sheet title
-        in: formData
-        name: title
+      - description: Sheet creation payload
+        in: body
+        name: payload
         required: true
-        type: string
-      - description: Sheet venue
-        in: formData
-        name: venue
-        required: true
-        type: string
-      - description: Sheet description
-        in: formData
-        name: description
-        type: string
+        schema:
+          $ref: '#/definitions/domain.SheetCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/domain.SheetCreateResponse'
         "400":
           description: Bad Request
           schema:
@@ -649,15 +818,22 @@ paths:
   /api/v1/sheet/fetch:
     get:
       description: Retrieve sheets depending on admin role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/domain.Sheet'
-            type: array
+            $ref: '#/definitions/domain.SheetListResponse'
         "401":
           description: Unauthorized
           schema:

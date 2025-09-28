@@ -32,34 +32,67 @@ func (_m *UserRepository) Create(c context.Context, user *domain.User) error {
 	return r0
 }
 
-// Fetch provides a mock function with given fields: c
-func (_m *UserRepository) Fetch(c context.Context) ([]domain.User, error) {
-	ret := _m.Called(c)
+// Fetch provides a mock function with given fields: c, pagination
+func (_m *UserRepository) Fetch(c context.Context, pagination domain.PaginationQuery) ([]domain.User, int64, error) {
+
+	ret := _m.Called(c, pagination)
 
 	if len(ret) == 0 {
+
 		panic("no return value specified for Fetch")
+
 	}
 
 	var r0 []domain.User
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]domain.User, error)); ok {
-		return rf(c)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) []domain.User); ok {
-		r0 = rf(c)
+
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.User); ok {
+
+		r0 = rf(c, pagination)
+
 	} else {
+
 		if ret.Get(0) != nil {
+
 			r0 = ret.Get(0).([]domain.User)
+
 		}
+
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(c)
-	} else {
-		r1 = ret.Error(1)
+	var r1 int64
+
+	if len(ret) > 1 {
+
+		if rf, ok := ret.Get(1).(func(context.Context, domain.PaginationQuery) int64); ok {
+
+			r1 = rf(c, pagination)
+
+		} else if ret.Get(1) != nil {
+
+			r1 = ret.Get(1).(int64)
+
+		}
+
 	}
 
-	return r0, r1
+	var r2 error
+
+	if len(ret) > 2 {
+
+		if rf, ok := ret.Get(2).(func(context.Context, domain.PaginationQuery) error); ok {
+
+			r2 = rf(c, pagination)
+
+		} else {
+
+			r2 = ret.Error(2)
+
+		}
+
+	}
+
+	return r0, r1, r2
+
 }
 
 // GetByEmail provides a mock function with given fields: c, email

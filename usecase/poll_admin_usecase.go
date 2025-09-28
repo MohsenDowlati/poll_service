@@ -29,14 +29,11 @@ func (p pollAdminUsecase) CreatePoll(c context.Context, poll *domain.Poll) error
 	return err
 }
 
-func (p pollAdminUsecase) GetBySheetID(c context.Context, sheetID string) ([]domain.Poll, error) {
+func (p pollAdminUsecase) GetBySheetID(c context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
 	defer cancel()
 
-	var polls []domain.Poll
-	polls, err := p.repository.GetPollBySheetID(ctx, sheetID)
-
-	return polls, err
+	return p.repository.GetPollBySheetID(ctx, sheetID, pagination)
 }
 
 func (p pollAdminUsecase) EditPoll(c context.Context, poll *domain.Poll) error {

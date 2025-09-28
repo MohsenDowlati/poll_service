@@ -13,11 +13,11 @@ type sheetUseCase struct {
 	contextTimeout time.Duration
 }
 
-func (s sheetUseCase) GetByUserID(c context.Context, userID string) ([]domain.Sheet, error) {
+func (s sheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
 	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
 	defer cancel()
 
-	return s.repository.GetByUserID(ctx, userID)
+	return s.repository.GetByUserID(ctx, userID, pagination)
 }
 
 func (s sheetUseCase) GetByID(c context.Context, id string) (domain.Sheet, error) {
@@ -34,11 +34,11 @@ func (s sheetUseCase) Create(c context.Context, sheet domain.Sheet) error {
 	return s.repository.Create(ctx, sheet)
 }
 
-func (s sheetUseCase) GetAll(c context.Context) ([]domain.Sheet, error) {
+func (s sheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
 	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
 	defer cancel()
 
-	return s.repository.GetAll(ctx)
+	return s.repository.GetAll(ctx, pagination)
 }
 
 func (s sheetUseCase) Delete(c context.Context, id string) error {

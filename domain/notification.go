@@ -46,7 +46,7 @@ type Notification struct {
 
 type NotificationRepository interface {
 	Create(ctx context.Context, notification *Notification) error
-	FetchPending(ctx context.Context) ([]Notification, error)
+	FetchPending(ctx context.Context, pagination PaginationQuery) ([]Notification, int64, error)
 	GetByID(ctx context.Context, id string) (Notification, error)
 	UpdateStatus(ctx context.Context, id string, status NotificationStatus, resolvedBy primitive.ObjectID, updatedAt time.Time) error
 	Delete(ctx context.Context, id string) error
@@ -55,7 +55,7 @@ type NotificationRepository interface {
 type NotificationUsecase interface {
 	CreateForNewUser(ctx context.Context, user *User) error
 	CreateForSheet(ctx context.Context, sheet *Sheet) error
-	FetchPending(ctx context.Context) ([]Notification, error)
+	FetchPending(ctx context.Context, pagination PaginationQuery) ([]Notification, int64, error)
 	Approve(ctx context.Context, notificationID string, adminID string) (Notification, error)
 	Reject(ctx context.Context, notificationID string, adminID string) (Notification, error)
 }
