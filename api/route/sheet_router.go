@@ -19,7 +19,7 @@ func NewSheetRouter(env *bootstrap.Env, db mongo.Database, contextTimeout time.D
 	pr := repository.NewPollRepository(db, domain.CollectionPoll)
 
 	sc := controller.SheetController{
-		SheetuseCase:        usecase.NewSheetUseCase(sr, contextTimeout),
+		SheetuseCase:        usecase.NewSheetUseCase(sr, ur, contextTimeout),
 		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, sr, contextTimeout),
 		PollUsecase:         usecase.NewPollAdminUsecase(pr, contextTimeout),
 	}

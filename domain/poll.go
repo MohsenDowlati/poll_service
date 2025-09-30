@@ -10,15 +10,16 @@ import (
 
 const CollectionPoll = "polls"
 
-type pollType string
+type PollType string
 
 const (
-	singleChoice pollType = "single_choice"
-	multiChoice  pollType = "multi_choice"
-	slide        pollType = "slide"
+	singleChoice PollType = "single_choice"
+	multiChoice  PollType = "multi_choice"
+	slide        PollType = "slide"
+	opinion      PollType = "opinion"
 )
 
-func ParsePollType(value string) (pollType, error) {
+func ParsePollType(value string) (PollType, error) {
 	switch value {
 	case "", string(singleChoice):
 		return singleChoice, nil
@@ -26,17 +27,41 @@ func ParsePollType(value string) (pollType, error) {
 		return multiChoice, nil
 	case string(slide):
 		return slide, nil
+	case string(opinion):
+		return opinion, nil
 	default:
 		return "", fmt.Errorf("invalid poll type: %s", value)
 	}
+}
+
+func (t PollType) MinOptions() int {
+	switch t {
+	case slide, opinion:
+		return 1
+	default:
+		return 2
+	}
+}
+
+func (t PollType) VoteSlots(optionCount int) int {
+	if optionCount < 0 {
+		optionCount = 0
+	}
+
+	if t == opinion {
+		return 1
+	}
+
+	return optionCount
 }
 
 type Poll struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	SheetID     primitive.ObjectID `bson:"sheetID"`
 	Title       string             `bson:"title"`
+	Category    string             `bson:"category"`
 	Options     []string           `bson:"options"`
-	PollType    pollType           `bson:"pollType"`
+	PollType    PollType           `bson:"pollType"`
 	Participant int                `bson:"participant"`
 	Votes       []int              `bson:"votes"`
 	Description string             `bson:"description"`

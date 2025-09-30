@@ -1,7 +1,18 @@
 package domain
 
+import "time"
+
+type SheetListItem struct {
+	ID        string      `json:"id"`
+	UserName  string      `json:"user_name"`
+	Title     string      `json:"title"`
+	Venue     string      `json:"venue"`
+	Status    SheetStatus `json:"status"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
 type SheetListResponse struct {
-	Data       []Sheet          `json:"data"`
+	Data       []SheetListItem  `json:"data"`
 	Pagination PaginationResult `json:"pagination"`
 }
 

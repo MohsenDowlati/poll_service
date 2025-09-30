@@ -11,7 +11,7 @@ type PollClientResponse struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
 	Options     []string `json:"options"`
-	PollType    pollType `json:"poll_type"`
+	PollType    PollType `json:"poll_type"`
 	Description string   `json:"description"`
 }
 

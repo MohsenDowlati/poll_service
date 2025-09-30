@@ -23,6 +23,7 @@ type PollAdminController struct {
 // @Param title formData string true "Poll title"
 // @Param options formData []string true "Poll options"
 // @Param poll_type formData string true "Poll type"
+// @Param category formData string false "Poll category"
 // @Param description formData string false "Poll description"
 // @Success 201 {object} domain.SuccessResponse
 // @Failure 400 {object} domain.ErrorResponse
@@ -53,8 +54,9 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		Title:       req.Title,
 		Options:     req.Options,
 		PollType:    req.PollType,
+		Category:    req.Category,
 		Participant: 0,
-		Votes:       make([]int, len(req.Options)),
+		Votes:       make([]int, req.PollType.VoteSlots(len(req.Options))),
 		Description: req.Description,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -81,6 +83,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 // @Param title formData string true "Poll title"
 // @Param options formData []string true "Poll options"
 // @Param poll_type formData string true "Poll type"
+// @Param category formData string false "Poll category"
 // @Param description formData string false "Poll description"
 // @Success 200 {object} domain.SuccessResponse
 // @Failure 400 {object} domain.ErrorResponse
@@ -120,8 +123,9 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		Title:       req.Title,
 		Options:     req.Options,
 		PollType:    req.PollType,
+		Category:    req.Category,
 		Participant: 0,
-		Votes:       make([]int, len(req.Options)),
+		Votes:       make([]int, req.PollType.VoteSlots(len(req.Options))),
 		Description: req.Description,
 		UpdatedAt:   time.Now(),
 	}
@@ -174,6 +178,7 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 			Title:       poll.Title,
 			Options:     poll.Options,
 			PollType:    poll.PollType,
+			Category:    poll.Category,
 			Participant: poll.Participant,
 			Votes:       poll.Votes,
 			Description: poll.Description,

@@ -84,6 +84,8 @@ func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 			"title":       poll.Title,
 			"description": poll.Description,
 			"options":     poll.Options,
+			"pollType":    poll.PollType,
+			"category":    poll.Category,
 			"updatedAt":   time.Now(),
 		},
 	}

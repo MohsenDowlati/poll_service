@@ -60,8 +60,6 @@ func (sc *SheetController) Create(c *gin.Context) {
 		return
 	}
 
-	description := strings.TrimSpace(payload.Description)
-
 	validatedPolls := make([]domain.Poll, 0, len(payload.Polls))
 	for idx, pollReq := range payload.Polls {
 		pollTitle := strings.TrimSpace(pollReq.Title)
@@ -84,10 +82,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 			return
 		}
 
-		minOptions := 2
-		if string(pollType) == "slide" {
-			minOptions = 1
-		}
+		minOptions := pollType.MinOptions()
 		if len(trimmedOptions) < minOptions {
 			message := fmt.Sprintf("poll %d requires at least %d option", idx+1, minOptions)
 			if minOptions > 1 {
@@ -97,19 +92,28 @@ func (sc *SheetController) Create(c *gin.Context) {
 			return
 		}
 
+		category := strings.TrimSpace(pollReq.Category)
+		if category == "" {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: fmt.Sprintf("poll %d category is required", idx+1)})
+			return
+		}
+
 		validatedPolls = append(validatedPolls, domain.Poll{
 			Title:       pollTitle,
 			Description: strings.TrimSpace(pollReq.Description),
 			Options:     trimmedOptions,
 			PollType:    pollType,
+			Category:    category,
 		})
 	}
 
-	ownerID, err := primitive.ObjectIDFromHex(userID)
+	actorID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid user identifier"})
 		return
 	}
+
+	ownerID := actorID
 
 	now := time.Now()
 
@@ -118,7 +122,6 @@ func (sc *SheetController) Create(c *gin.Context) {
 		UserID:          ownerID,
 		Title:           title,
 		Venue:           venue,
-		Description:     description,
 		IsPhoneRequired: payload.IsPhoneRequired,
 		CreatedAt:       now,
 		UpdatedAt:       now,
@@ -126,7 +129,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 
 	if userType == domain.SuperAdmin {
 		sheet.Status = domain.SheetStatusPublished
-		sheet.ApprovedBy = ownerID
+		sheet.ApprovedBy = actorID
 		sheet.ApprovedAt = now
 	} else {
 		sheet.Status = domain.SheetStatusPending
@@ -154,7 +157,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 			poll.ID = primitive.NewObjectID()
 			poll.SheetID = sheet.ID
 			poll.Participant = 0
-			poll.Votes = make([]int, len(poll.Options))
+			poll.Votes = make([]int, poll.PollType.VoteSlots(len(poll.Options)))
 			poll.CreatedAt = now
 			poll.UpdatedAt = now
 
@@ -173,6 +176,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 				Title:       poll.Title,
 				Options:     poll.Options,
 				PollType:    poll.PollType,
+				Category:    poll.Category,
 				Participant: poll.Participant,
 				Votes:       poll.Votes,
 				Description: poll.Description,
@@ -224,18 +228,15 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 
 	pagination := extractPagination(c)
 
-	var (
-		sheets []domain.Sheet
-		total  int64
-		err    error
-	)
+	var sheets []domain.SheetListItem
+	var total int64
+	var err error
 
-	switch userType {
-	case domain.SuperAdmin:
+	if userType == domain.SuperAdmin {
 		sheets, total, err = sc.SheetuseCase.GetAll(c, pagination)
-	case domain.VerifiedAdmin:
+	} else if userType == domain.VerifiedAdmin {
 		sheets, total, err = sc.SheetuseCase.GetByUserID(c, userID, pagination)
-	default:
+	} else {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
 		return
 	}

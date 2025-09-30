@@ -6,7 +6,8 @@ type PollAdminRequest struct {
 	SheetID     string   `form:"sheet_id"`
 	Title       string   `form:"title"`
 	Options     []string `form:"options"`
-	PollType    pollType `form:"poll_type"`
+	PollType    PollType `form:"poll_type"`
+	Category    string   `form:"category"`
 	Description string   `form:"description"`
 }
 
@@ -14,7 +15,8 @@ type PollAdminResponse struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
 	Options     []string `json:"options"`
-	PollType    pollType `json:"poll_type"`
+	PollType    PollType `json:"poll_type"`
+	Category    string   `json:"category"`
 	Participant int      `json:"participant"`
 	Votes       []int    `json:"votes"`
 	Description string   `json:"description"`

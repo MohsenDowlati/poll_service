@@ -217,6 +217,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "Poll category",
+                        "name": "category",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
                         "description": "Poll description",
                         "name": "description",
                         "in": "formData"
@@ -353,6 +359,12 @@
                         "name": "poll_type",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Poll category",
+                        "name": "category",
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -1098,6 +1110,9 @@
         "domain.PollAdminResponse": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1114,7 +1129,7 @@
                     "type": "integer"
                 },
                 "poll_type": {
-                    "$ref": "#/definitions/domain.pollType"
+                    "$ref": "#/definitions/domain.PollType"
                 },
                 "title": {
                     "type": "string"
@@ -1171,12 +1186,27 @@
                     }
                 },
                 "poll_type": {
-                    "$ref": "#/definitions/domain.pollType"
+                    "$ref": "#/definitions/domain.PollType"
                 },
                 "title": {
                     "type": "string"
                 }
             }
+        },
+        "domain.PollType": {
+            "type": "string",
+            "enum": [
+                "single_choice",
+                "multi_choice",
+                "slide",
+                "opinion"
+            ],
+            "x-enum-varnames": [
+                "singleChoice",
+                "multiChoice",
+                "slide",
+                "opinion"
+            ]
         },
         "domain.Profile": {
             "type": "object",
@@ -1239,6 +1269,9 @@
         "domain.SheetCreatePoll": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1259,14 +1292,8 @@
         "domain.SheetCreateRequest": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string"
-                },
                 "is_phone_required": {
                     "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
                 },
                 "polls": {
                     "type": "array",
@@ -1395,19 +1422,6 @@
                 "VerifiedAdmin",
                 "NewUser",
                 "CanceledUser"
-            ]
-        },
-        "domain.pollType": {
-            "type": "string",
-            "enum": [
-                "single_choice",
-                "multi_choice",
-                "slide"
-            ],
-            "x-enum-varnames": [
-                "singleChoice",
-                "multiChoice",
-                "slide"
             ]
         }
     },

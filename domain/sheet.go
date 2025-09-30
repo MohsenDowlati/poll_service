@@ -36,13 +36,12 @@ type SheetCreatePoll struct {
 	Description string   `json:"description,omitempty" form:"description"`
 	Options     []string `json:"options" form:"options"`
 	PollType    string   `json:"poll_type" form:"poll_type"`
+	Category    string   `json:"category" form:"category"`
 }
 
 type SheetCreateRequest struct {
 	Title           string            `json:"title" form:"title"`
-	Name            string            `json:"name,omitempty" form:"name"`
 	Venue           string            `json:"venue" form:"venue"`
-	Description     string            `json:"description,omitempty" form:"description"`
 	IsPhoneRequired bool              `json:"is_phone_required" form:"is_phone_required"`
 	Polls           []SheetCreatePoll `json:"polls" form:"polls"`
 }
@@ -54,10 +53,7 @@ type SheetCreateResponse struct {
 }
 
 func (r SheetCreateRequest) EffectiveTitle() string {
-	if r.Title != "" {
-		return r.Title
-	}
-	return r.Name
+	return r.Title
 }
 
 type SheetRepository interface {
@@ -71,9 +67,9 @@ type SheetRepository interface {
 
 type SheetUseCase interface {
 	Create(c context.Context, sheet Sheet) error
-	GetAll(c context.Context, pagination PaginationQuery) ([]Sheet, int64, error)
+	GetAll(c context.Context, pagination PaginationQuery) ([]SheetListItem, int64, error)
 	Delete(c context.Context, id string) error
-	GetByUserID(c context.Context, userID string, pagination PaginationQuery) ([]Sheet, int64, error)
+	GetByUserID(c context.Context, userID string, pagination PaginationQuery) ([]SheetListItem, int64, error)
 	GetByID(c context.Context, id string) (Sheet, error)
 	UpdateStatus(c context.Context, id string, status SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error
 }

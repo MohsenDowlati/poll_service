@@ -225,6 +225,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Poll category",
+                        "name": "category",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
                         "description": "Poll description",
                         "name": "description",
                         "in": "formData"
@@ -361,6 +367,12 @@ const docTemplate = `{
                         "name": "poll_type",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Poll category",
+                        "name": "category",
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -1106,6 +1118,9 @@ const docTemplate = `{
         "domain.PollAdminResponse": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1122,7 +1137,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "poll_type": {
-                    "$ref": "#/definitions/domain.pollType"
+                    "$ref": "#/definitions/domain.PollType"
                 },
                 "title": {
                     "type": "string"
@@ -1179,12 +1194,27 @@ const docTemplate = `{
                     }
                 },
                 "poll_type": {
-                    "$ref": "#/definitions/domain.pollType"
+                    "$ref": "#/definitions/domain.PollType"
                 },
                 "title": {
                     "type": "string"
                 }
             }
+        },
+        "domain.PollType": {
+            "type": "string",
+            "enum": [
+                "single_choice",
+                "multi_choice",
+                "slide",
+                "opinion"
+            ],
+            "x-enum-varnames": [
+                "singleChoice",
+                "multiChoice",
+                "slide",
+                "opinion"
+            ]
         },
         "domain.Profile": {
             "type": "object",
@@ -1247,6 +1277,9 @@ const docTemplate = `{
         "domain.SheetCreatePoll": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1267,14 +1300,8 @@ const docTemplate = `{
         "domain.SheetCreateRequest": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string"
-                },
                 "is_phone_required": {
                     "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
                 },
                 "polls": {
                     "type": "array",
@@ -1403,19 +1430,6 @@ const docTemplate = `{
                 "VerifiedAdmin",
                 "NewUser",
                 "CanceledUser"
-            ]
-        },
-        "domain.pollType": {
-            "type": "string",
-            "enum": [
-                "single_choice",
-                "multi_choice",
-                "slide"
-            ],
-            "x-enum-varnames": [
-                "singleChoice",
-                "multiChoice",
-                "slide"
             ]
         }
     },

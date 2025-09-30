@@ -55,7 +55,7 @@ func (_m *SheetUseCase) Delete(c context.Context, id string) error {
 }
 
 // GetAll provides a mock function with given fields: c, pagination
-func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery) ([]domain.SheetListItem, int64, error) {
 
 	ret := _m.Called(c, pagination)
 
@@ -65,7 +65,7 @@ func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQu
 
 	}
 
-	var r0 []domain.Sheet
+	var r0 []domain.SheetListItem
 
 	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.Sheet); ok {
 
@@ -75,7 +75,7 @@ func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQu
 
 		if ret.Get(0) != nil {
 
-			r0 = ret.Get(0).([]domain.Sheet)
+			r0 = ret.Get(0).([]domain.SheetListItem)
 
 		}
 
@@ -118,7 +118,7 @@ func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQu
 }
 
 // GetByUserID provides a mock function with given fields: c, userID
-func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery) ([]domain.SheetListItem, int64, error) {
 
 	ret := _m.Called(c, userID, pagination)
 
@@ -128,7 +128,7 @@ func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination
 
 	}
 
-	var r0 []domain.Sheet
+	var r0 []domain.SheetListItem
 
 	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Sheet); ok {
 
@@ -138,7 +138,7 @@ func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination
 
 		if ret.Get(0) != nil {
 
-			r0 = ret.Get(0).([]domain.Sheet)
+			r0 = ret.Get(0).([]domain.SheetListItem)
 
 		}
 
