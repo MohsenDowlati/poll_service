@@ -68,6 +68,35 @@ func (_m *PollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 	return r0
 }
 
+// GetByID provides a mock function with given fields: ctx, id
+func (_m *PollRepository) GetByID(ctx context.Context, id string) (domain.Poll, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByID")
+	}
+
+	var r0 domain.Poll
+	if rf, ok := ret.Get(0).(func(context.Context, string) domain.Poll); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.Poll)
+		}
+	}
+
+	var r1 error
+	if len(ret) > 1 {
+		if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+			r1 = rf(ctx, id)
+		} else {
+			r1 = ret.Error(1)
+		}
+	}
+
+	return r0, r1
+}
+
 // GetPollBySheetID provides a mock function with given fields: ctx, sheetID
 func (_m *PollRepository) GetPollBySheetID(ctx context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 	ret := _m.Called(ctx, sheetID, pagination)
@@ -104,6 +133,24 @@ func (_m *PollRepository) GetPollBySheetID(ctx context.Context, sheetID string, 
 	}
 
 	return r0, r1, r2
+}
+
+// AppendOpinionResponse provides a mock function with given fields: ctx, id, responses
+func (_m *PollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string) error {
+	ret := _m.Called(ctx, id, responses)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AppendOpinionResponse")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
+		r0 = rf(ctx, id, responses)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // SubmitVote provides a mock function with given fields: ctx, id, votes

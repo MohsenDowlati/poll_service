@@ -157,7 +157,12 @@ func (sc *SheetController) Create(c *gin.Context) {
 			poll.ID = primitive.NewObjectID()
 			poll.SheetID = sheet.ID
 			poll.Participant = 0
-			poll.Votes = make([]int, poll.PollType.VoteSlots(len(poll.Options)))
+			if poll.PollType == domain.PollTypeOpinion {
+				poll.Votes = nil
+				poll.Responses = []string{}
+			} else {
+				poll.Votes = make([]int, poll.PollType.VoteSlots(len(poll.Options)))
+			}
 			poll.CreatedAt = now
 			poll.UpdatedAt = now
 
@@ -179,6 +184,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 				Category:    poll.Category,
 				Participant: poll.Participant,
 				Votes:       poll.Votes,
+				Responses:   poll.Responses,
 				Description: poll.Description,
 			})
 		}

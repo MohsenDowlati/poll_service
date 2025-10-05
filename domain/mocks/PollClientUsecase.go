@@ -15,6 +15,35 @@ type PollClientUsecase struct {
 }
 
 // GetBySheetID provides a mock function with given fields: c, sheetID
+// GetSheet provides a mock function with given fields: c, sheetID
+func (_m *PollClientUsecase) GetSheet(c context.Context, sheetID string) (domain.Sheet, error) {
+	ret := _m.Called(c, sheetID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSheet")
+	}
+
+	var r0 domain.Sheet
+	if rf, ok := ret.Get(0).(func(context.Context, string) domain.Sheet); ok {
+		r0 = rf(c, sheetID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.Sheet)
+		}
+	}
+
+	var r1 error
+	if len(ret) > 1 {
+		if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+			r1 = rf(c, sheetID)
+		} else {
+			r1 = ret.Error(1)
+		}
+	}
+
+	return r0, r1
+}
+
 func (_m *PollClientUsecase) GetBySheetID(c context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 
 	ret := _m.Called(c, sheetID, pagination)
@@ -77,17 +106,17 @@ func (_m *PollClientUsecase) GetBySheetID(c context.Context, sheetID string, pag
 
 }
 
-// SubmitVote provides a mock function with given fields: c, id, votes
-func (_m *PollClientUsecase) SubmitVote(c context.Context, id string, votes []int) error {
-	ret := _m.Called(c, id, votes)
+// SubmitVote provides a mock function with given fields: c, payload
+func (_m *PollClientUsecase) SubmitVote(c context.Context, payload domain.PollClientRequest) error {
+	ret := _m.Called(c, payload)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SubmitVote")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []int) error); ok {
-		r0 = rf(c, id, votes)
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PollClientRequest) error); ok {
+		r0 = rf(c, payload)
 	} else {
 		r0 = ret.Error(0)
 	}

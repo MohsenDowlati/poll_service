@@ -28,6 +28,7 @@ type PollAdminListResponse struct {
 
 type PollClientListResponse struct {
 	Data       []PollClientResponse `json:"data"`
+	Sheet      PollClientSheetMeta  `json:"sheet"`
 	Pagination PaginationResult     `json:"pagination"`
 }
 

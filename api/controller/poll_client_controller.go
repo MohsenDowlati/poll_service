@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"errors"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -30,9 +32,13 @@ func (pcc *PollClientController) Submit(c *gin.Context) {
 		return
 	}
 
-	err = pcc.PollClientUsecse.SubmitVote(c, req.ID, req.Votes)
+	err = pcc.PollClientUsecse.SubmitVote(c, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrNoVotesSubmitted) || errors.Is(err, domain.ErrNoOpinionSubmitted) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
@@ -48,6 +54,8 @@ func (pcc *PollClientController) Submit(c *gin.Context) {
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
 // @Success 200 {object} domain.PollClientListResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/client/fetch [get]
 func (pcc *PollClientController) Fetch(c *gin.Context) {
@@ -69,6 +77,16 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 		return
 	}
 
+	sheet, err := pcc.PollClientUsecse.GetSheet(c, id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
 	var result []domain.PollClientResponse
 
 	for _, poll := range polls {
@@ -82,7 +100,12 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 	}
 
 	response := domain.PollClientListResponse{
-		Data:       result,
+		Data: result,
+		Sheet: domain.PollClientSheetMeta{
+			ID:              sheet.ID.Hex(),
+			Title:           sheet.Title,
+			IsPhoneRequired: sheet.IsPhoneRequired,
+		},
 		Pagination: domain.NewPaginationResult(pagination, total),
 	}
 

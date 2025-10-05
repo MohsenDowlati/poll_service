@@ -22,6 +22,7 @@ type NotificationController struct {
 // @Param page_size query int false "Page size"
 // @Success 200 {object} domain.NotificationListResponse
 // @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/poll/notifications [get]
 func (nc *NotificationController) FetchPending(c *gin.Context) {
@@ -60,6 +61,7 @@ func (nc *NotificationController) FetchPending(c *gin.Context) {
 // @Param id path string true "Notification identifier"
 // @Success 200 {object} domain.NotificationResponse
 // @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
 // @Failure 409 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/poll/notifications/{id}/approve [post]
@@ -70,6 +72,11 @@ func (nc *NotificationController) Approve(c *gin.Context) {
 	}
 
 	adminID := c.GetString("x-user-id")
+	if adminID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
 	notificationID := c.Param("id")
 
 	notification, err := nc.NotificationUsecase.Approve(c, notificationID, adminID)
@@ -77,6 +84,8 @@ func (nc *NotificationController) Approve(c *gin.Context) {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrNotificationResolved) {
 			status = http.StatusConflict
+		} else if errors.Is(err, domain.ErrNotificationNotFound) {
+			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
 		return
@@ -94,6 +103,7 @@ func (nc *NotificationController) Approve(c *gin.Context) {
 // @Param id path string true "Notification identifier"
 // @Success 200 {object} domain.NotificationResponse
 // @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
 // @Failure 409 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /api/v1/poll/notifications/{id}/reject [post]
@@ -104,6 +114,11 @@ func (nc *NotificationController) Reject(c *gin.Context) {
 	}
 
 	adminID := c.GetString("x-user-id")
+	if adminID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
 	notificationID := c.Param("id")
 
 	notification, err := nc.NotificationUsecase.Reject(c, notificationID, adminID)
@@ -111,6 +126,8 @@ func (nc *NotificationController) Reject(c *gin.Context) {
 		status := http.StatusInternalServerError
 		if errors.Is(err, domain.ErrNotificationResolved) {
 			status = http.StatusConflict
+		} else if errors.Is(err, domain.ErrNotificationNotFound) {
+			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
 		return

@@ -163,6 +163,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/domain.PollClientListResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -508,6 +520,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -550,6 +568,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -602,6 +626,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -1139,6 +1169,12 @@ const docTemplate = `{
                 "poll_type": {
                     "$ref": "#/definitions/domain.PollType"
                 },
+                "responses": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "title": {
                     "type": "string"
                 },
@@ -1161,6 +1197,9 @@ const docTemplate = `{
                 },
                 "pagination": {
                     "$ref": "#/definitions/domain.PaginationResult"
+                },
+                "sheet": {
+                    "$ref": "#/definitions/domain.PollClientSheetMeta"
                 }
             }
         },
@@ -1169,6 +1208,12 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "string"
+                },
+                "inputs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "votes": {
                     "type": "array",
@@ -1195,6 +1240,20 @@ const docTemplate = `{
                 },
                 "poll_type": {
                     "$ref": "#/definitions/domain.PollType"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PollClientSheetMeta": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_phone_required": {
+                    "type": "boolean"
                 },
                 "title": {
                     "type": "string"
@@ -1334,13 +1393,36 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.SheetListItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.SheetStatus"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "venue": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.SheetListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Sheet"
+                        "$ref": "#/definitions/domain.SheetListItem"
                     }
                 },
                 "pagination": {

@@ -48,6 +48,11 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 
 	var poll domain.Poll
 
+	votes := make([]int, req.PollType.VoteSlots(len(req.Options)))
+	if req.PollType == domain.PollTypeOpinion {
+		votes = nil
+	}
+
 	poll = domain.Poll{
 		ID:          primitive.NewObjectID(),
 		SheetID:     hexSheetID,
@@ -56,10 +61,14 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		PollType:    req.PollType,
 		Category:    req.Category,
 		Participant: 0,
-		Votes:       make([]int, req.PollType.VoteSlots(len(req.Options))),
+		Votes:       votes,
 		Description: req.Description,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
+	}
+
+	if req.PollType == domain.PollTypeOpinion {
+		poll.Responses = []string{}
 	}
 
 	err = pc.PollAdminUsecase.CreatePoll(c, &poll)
@@ -117,6 +126,11 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 
 	var poll domain.Poll
 
+	votes := make([]int, req.PollType.VoteSlots(len(req.Options)))
+	if req.PollType == domain.PollTypeOpinion {
+		votes = nil
+	}
+
 	poll = domain.Poll{
 		ID:          UID,
 		SheetID:     hexSheetID,
@@ -125,9 +139,13 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		PollType:    req.PollType,
 		Category:    req.Category,
 		Participant: 0,
-		Votes:       make([]int, req.PollType.VoteSlots(len(req.Options))),
+		Votes:       votes,
 		Description: req.Description,
 		UpdatedAt:   time.Now(),
+	}
+
+	if req.PollType == domain.PollTypeOpinion {
+		poll.Responses = []string{}
 	}
 
 	err = pc.PollAdminUsecase.EditPoll(c, &poll)
@@ -181,6 +199,7 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 			Category:    poll.Category,
 			Participant: poll.Participant,
 			Votes:       poll.Votes,
+			Responses:   poll.Responses,
 			Description: poll.Description,
 		})
 	}

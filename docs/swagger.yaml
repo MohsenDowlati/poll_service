@@ -106,6 +106,10 @@ definitions:
         type: integer
       poll_type:
         $ref: '#/definitions/domain.PollType'
+      responses:
+        items:
+          type: string
+        type: array
       title:
         type: string
       votes:
@@ -121,11 +125,17 @@ definitions:
         type: array
       pagination:
         $ref: '#/definitions/domain.PaginationResult'
+      sheet:
+        $ref: '#/definitions/domain.PollClientSheetMeta'
     type: object
   domain.PollClientRequest:
     properties:
       id:
         type: string
+      inputs:
+        items:
+          type: string
+        type: array
       votes:
         items:
           type: integer
@@ -143,6 +153,15 @@ definitions:
         type: array
       poll_type:
         $ref: '#/definitions/domain.PollType'
+      title:
+        type: string
+    type: object
+  domain.PollClientSheetMeta:
+    properties:
+      id:
+        type: string
+      is_phone_required:
+        type: boolean
       title:
         type: string
     type: object
@@ -235,11 +254,26 @@ definitions:
       sheet:
         $ref: '#/definitions/domain.Sheet'
     type: object
+  domain.SheetListItem:
+    properties:
+      id:
+        type: string
+      status:
+        $ref: '#/definitions/domain.SheetStatus'
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_name:
+        type: string
+      venue:
+        type: string
+    type: object
   domain.SheetListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/domain.Sheet'
+          $ref: '#/definitions/domain.SheetListItem'
         type: array
       pagination:
         $ref: '#/definitions/domain.PaginationResult'
@@ -401,6 +435,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/domain.PollClientListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -625,6 +667,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -652,6 +698,10 @@ paths:
             $ref: '#/definitions/domain.NotificationResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
         "409":
@@ -685,6 +735,10 @@ paths:
             $ref: '#/definitions/domain.NotificationResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/domain.ErrorResponse'
         "409":

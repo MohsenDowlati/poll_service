@@ -10,7 +10,10 @@ import (
 
 const CollectionNotification = "notifications"
 
-var ErrNotificationResolved = errors.New("notification already resolved")
+var (
+	ErrNotificationResolved = errors.New("notification already resolved")
+	ErrNotificationNotFound = errors.New("notification not found")
+)
 
 type NotificationStatus string
 

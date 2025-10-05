@@ -19,6 +19,7 @@ type PollAdminResponse struct {
 	Category    string   `json:"category"`
 	Participant int      `json:"participant"`
 	Votes       []int    `json:"votes"`
+	Responses   []string `json:"responses,omitempty"`
 	Description string   `json:"description"`
 }
 

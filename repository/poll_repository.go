@@ -35,6 +35,19 @@ func (pr *pollRepository) Create(ctx context.Context, poll *domain.Poll) error {
 	return err
 }
 
+func (pr *pollRepository) GetByID(ctx context.Context, id string) (domain.Poll, error) {
+	collection := pr.database.Collection(pr.collection)
+
+	var poll domain.Poll
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return poll, err
+	}
+
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&poll)
+	return poll, err
+}
+
 func (pr *pollRepository) GetPollBySheetID(ctx context.Context, sheetID string, pagination domain.PaginationQuery) ([]domain.Poll, int64, error) {
 	collection := pr.database.Collection(pr.collection)
 
@@ -99,6 +112,36 @@ func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 
 }
 
+func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string) error {
+	collection := pr.database.Collection(pr.collection)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	if len(responses) == 0 {
+		return domain.ErrNoOpinionSubmitted
+	}
+
+	update := bson.M{
+		"$push": bson.M{
+			"responses": bson.M{
+				"$each": responses,
+			},
+		},
+		"$inc": bson.M{
+			"participant": 1,
+		},
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	return err
+}
+
 func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int) error {
 	collection := pr.database.Collection(pr.collection)
 
@@ -111,11 +154,23 @@ func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int
 
 	updateDoc := bson.M{}
 	for i, voteCount := range votes {
-		updateDoc[fmt.Sprintf("Votes.%d", i)] = voteCount
+		if voteCount == 0 {
+			continue
+		}
+		updateDoc[fmt.Sprintf("votes.%d", i)] = voteCount
 	}
+
+	if len(updateDoc) == 0 {
+		return domain.ErrNoVotesSubmitted
+	}
+
+	updateDoc["participant"] = 1
 
 	update := bson.M{
 		"$inc": updateDoc,
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+		},
 	}
 
 	_, err = collection.UpdateOne(ctx, filter, update)

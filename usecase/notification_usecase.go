@@ -2,11 +2,13 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type notificationUsecase struct {
@@ -78,6 +80,9 @@ func (nu *notificationUsecase) Approve(c context.Context, notificationID string,
 
 	notification, err := nu.notificationRepository.GetByID(ctx, notificationID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 
@@ -109,10 +114,16 @@ func (nu *notificationUsecase) Approve(c context.Context, notificationID string,
 	}
 
 	if err = nu.notificationRepository.UpdateStatus(ctx, notificationID, domain.NotificationApproved, resolverID, resolvedAt); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 
 	if err = nu.notificationRepository.Delete(ctx, notificationID); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 
@@ -129,6 +140,9 @@ func (nu *notificationUsecase) Reject(c context.Context, notificationID string, 
 
 	notification, err := nu.notificationRepository.GetByID(ctx, notificationID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 
@@ -160,10 +174,16 @@ func (nu *notificationUsecase) Reject(c context.Context, notificationID string, 
 	}
 
 	if err = nu.notificationRepository.UpdateStatus(ctx, notificationID, domain.NotificationRejected, resolverID, resolvedAt); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 
 	if err = nu.notificationRepository.Delete(ctx, notificationID); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.Notification{}, domain.ErrNotificationNotFound
+		}
 		return domain.Notification{}, err
 	}
 

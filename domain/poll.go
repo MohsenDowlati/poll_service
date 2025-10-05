@@ -19,6 +19,13 @@ const (
 	opinion      PollType = "opinion"
 )
 
+var (
+	PollTypeSingleChoice = singleChoice
+	PollTypeMultiChoice  = multiChoice
+	PollTypeSlide        = slide
+	PollTypeOpinion      = opinion
+)
+
 func ParsePollType(value string) (PollType, error) {
 	switch value {
 	case "", string(singleChoice):
@@ -64,6 +71,7 @@ type Poll struct {
 	PollType    PollType           `bson:"pollType"`
 	Participant int                `bson:"participant"`
 	Votes       []int              `bson:"votes"`
+	Responses   []string           `bson:"responses,omitempty"`
 	Description string             `bson:"description"`
 	CreatedAt   time.Time          `bson:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt"`
@@ -72,7 +80,9 @@ type Poll struct {
 type PollRepository interface {
 	Create(ctx context.Context, poll *Poll) error
 	GetPollBySheetID(ctx context.Context, sheetID string, pagination PaginationQuery) ([]Poll, int64, error)
+	GetByID(ctx context.Context, id string) (Poll, error)
 	EditPoll(ctx context.Context, poll *Poll) error
 	SubmitVote(ctx context.Context, id string, votes []int) error
+	AppendOpinionResponse(ctx context.Context, id string, responses []string) error
 	Delete(ctx context.Context, id string) error
 }
