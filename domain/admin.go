@@ -3,8 +3,8 @@ package domain
 import "context"
 
 type AdminRequest struct {
-	UserID     string `form:"user_id"`
-	IsVerified bool   `form:"is_verified"`
+	UserID     string `json:"user_id" form:"user_id"`
+	IsVerified *bool  `json:"is_verified" form:"is_verified"`
 }
 
 type AdminResponse struct {

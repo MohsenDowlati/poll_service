@@ -7,7 +7,7 @@ type PollAdminRequest struct {
 	Title       string   `form:"title"`
 	Options     []string `form:"options"`
 	PollType    PollType `form:"poll_type"`
-	Category    string   `form:"category"`
+	Category    []string `form:"category"`
 	Description string   `form:"description"`
 }
 
@@ -16,7 +16,7 @@ type PollAdminResponse struct {
 	Title       string   `json:"title"`
 	Options     []string `json:"options"`
 	PollType    PollType `json:"poll_type"`
-	Category    string   `json:"category"`
+	Category    []string `json:"category"`
 	Participant int      `json:"participant"`
 	Votes       []int    `json:"votes"`
 	Responses   []string `json:"responses,omitempty"`

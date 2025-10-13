@@ -15,6 +15,7 @@ const (
 	SheetStatusPending   SheetStatus = "pending"
 	SheetStatusPublished SheetStatus = "published"
 	SheetStatusRejected  SheetStatus = "rejected"
+	SheetStatusFinished  SheetStatus = "finished"
 )
 
 type Sheet struct {
@@ -36,7 +37,7 @@ type SheetCreatePoll struct {
 	Description string   `json:"description,omitempty" form:"description"`
 	Options     []string `json:"options" form:"options"`
 	PollType    string   `json:"poll_type" form:"poll_type"`
-	Category    string   `json:"category" form:"category"`
+	Category    []string `json:"category" form:"category"`
 }
 
 type SheetCreateRequest struct {
@@ -50,6 +51,10 @@ type SheetCreateResponse struct {
 	Message string              `json:"message"`
 	Sheet   Sheet               `json:"sheet"`
 	Polls   []PollAdminResponse `json:"polls,omitempty"`
+}
+
+type SheetStatusUpdateRequest struct {
+	Status SheetStatus `json:"status" form:"status"`
 }
 
 func (r SheetCreateRequest) EffectiveTitle() string {

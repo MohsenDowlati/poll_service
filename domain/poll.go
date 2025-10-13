@@ -66,7 +66,7 @@ type Poll struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	SheetID     primitive.ObjectID `bson:"sheetID"`
 	Title       string             `bson:"title"`
-	Category    string             `bson:"category"`
+	Category    []string           `bson:"category"`
 	Options     []string           `bson:"options"`
 	PollType    PollType           `bson:"pollType"`
 	Participant int                `bson:"participant"`
