@@ -23,7 +23,7 @@ type PollAdminController struct {
 // @Param title formData string true "Poll title"
 // @Param options formData []string true "Poll options"
 // @Param poll_type formData string true "Poll type"
-// @Param category formData string false "Poll category"
+// @Param category formData []string true "Poll categories (repeat parameter for multiple values)"
 // @Param description formData string false "Poll description"
 // @Success 201 {object} domain.SuccessResponse
 // @Failure 400 {object} domain.ErrorResponse
@@ -36,6 +36,12 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 	err := c.ShouldBind(&req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	categories := normalizeCategories(req.Category)
+	if len(categories) == 0 {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "at least one category is required"})
 		return
 	}
 
@@ -59,7 +65,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		Title:       req.Title,
 		Options:     req.Options,
 		PollType:    req.PollType,
-		Category:    req.Category,
+		Category:    categories,
 		Participant: 0,
 		Votes:       votes,
 		Description: req.Description,
@@ -92,7 +98,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 // @Param title formData string true "Poll title"
 // @Param options formData []string true "Poll options"
 // @Param poll_type formData string true "Poll type"
-// @Param category formData string false "Poll category"
+// @Param category formData []string true "Poll categories (repeat parameter for multiple values)"
 // @Param description formData string false "Poll description"
 // @Success 200 {object} domain.SuccessResponse
 // @Failure 400 {object} domain.ErrorResponse
@@ -107,6 +113,12 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 	err := c.ShouldBind(&req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	categories := normalizeCategories(req.Category)
+	if len(categories) == 0 {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "at least one category is required"})
 		return
 	}
 
@@ -137,7 +149,7 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		Title:       req.Title,
 		Options:     req.Options,
 		PollType:    req.PollType,
-		Category:    req.Category,
+		Category:    categories,
 		Participant: 0,
 		Votes:       votes,
 		Description: req.Description,

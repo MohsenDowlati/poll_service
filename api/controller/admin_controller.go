@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
@@ -55,4 +56,68 @@ func (ac *AdminController) Fetch(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// UpdateStatus updates a user's verification status (super admin only).
+// @Summary Update user status
+// @Description Activate or deactivate a user by toggling their verification status.
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User identifier"
+// @Param payload body domain.AdminRequest true "Status payload"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/admin/users/{id}/status [put]
+func (ac *AdminController) UpdateStatus(c *gin.Context) {
+	if domain.UserType(c.GetString("x-user-type")) != domain.SuperAdmin {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	//TODO: what the hell is ID
+
+	var payload domain.AdminRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	paramID := strings.TrimSpace(c.Param("id"))
+	bodyID := strings.TrimSpace(payload.UserID)
+
+	targetID := paramID
+	if targetID == "" {
+		targetID = bodyID
+	}
+
+	if targetID == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "user id is required"})
+		return
+	}
+
+	if bodyID != "" && bodyID != targetID {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "user id mismatch"})
+		return
+	}
+
+	if payload.IsVerified == nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "is_verified is required"})
+		return
+	}
+
+	if err := ac.AdminUsecase.VerifyUser(c, targetID, *payload.IsVerified); err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	message := "user deactivated successfully"
+	if *payload.IsVerified {
+		message = "user activated successfully"
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{Message: message})
 }

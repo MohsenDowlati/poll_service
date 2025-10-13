@@ -92,9 +92,9 @@ func (sc *SheetController) Create(c *gin.Context) {
 			return
 		}
 
-		category := strings.TrimSpace(pollReq.Category)
-		if category == "" {
-			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: fmt.Sprintf("poll %d category is required", idx+1)})
+		categories := normalizeCategories(pollReq.Category)
+		if len(categories) == 0 {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: fmt.Sprintf("poll %d requires at least one category", idx+1)})
 			return
 		}
 
@@ -103,7 +103,7 @@ func (sc *SheetController) Create(c *gin.Context) {
 			Description: strings.TrimSpace(pollReq.Description),
 			Options:     trimmedOptions,
 			PollType:    pollType,
-			Category:    category,
+			Category:    categories,
 		})
 	}
 
@@ -350,4 +350,83 @@ func (sc *SheetController) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "sheet deleted!"})
+}
+
+// Finish marks a sheet as finished.
+// @Summary Finish sheet
+// @Description Mark a sheet as finished (super admin or sheet owner).
+// @Tags Sheets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id query string true "Sheet identifier"
+// @Param payload body domain.SheetStatusUpdateRequest true "Status payload (status must be 'finished')"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/sheet/finish [put]
+func (sc *SheetController) Finish(c *gin.Context) {
+	identifier := c.Param("id")
+	if identifier == "" {
+		identifier = c.Query("id")
+	}
+
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
+		return
+	}
+
+	var payload domain.SheetStatusUpdateRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	if payload.Status != domain.SheetStatusFinished {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "status must be 'finished'"})
+		return
+	}
+
+	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	userID := c.GetString("x-user-id")
+	userType := domain.UserType(c.GetString("x-user-type"))
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if userType != domain.SuperAdmin && sheet.UserID.Hex() != userID {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	if sheet.Status == domain.SheetStatusFinished {
+		c.JSON(http.StatusOK, domain.SuccessResponse{Message: "sheet already finished"})
+		return
+	}
+
+	actorID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid user identifier"})
+		return
+	}
+
+	now := time.Now()
+	if err = sc.SheetuseCase.UpdateStatus(c, identifier, domain.SheetStatusFinished, actorID, now); err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "sheet marked as finished"})
 }
