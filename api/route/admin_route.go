@@ -20,4 +20,5 @@ func NewAdminRouter(env *bootstrap.Env, timeout time.Duration, db mongo.Database
 	}
 
 	group.GET("/admin/users", ac.Fetch)
+	group.PUT("/admin/users/:id/status", ac.UpdateStatus)
 }
