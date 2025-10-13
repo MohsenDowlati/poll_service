@@ -125,6 +125,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/users/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Activate or deactivate a user by toggling their verification status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User identifier",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.AdminRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/client/fetch": {
             "get": {
                 "description": "Retrieve published polls for a sheet.",
@@ -236,10 +300,15 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Poll category",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Poll categories (repeat parameter for multiple values)",
                         "name": "category",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -381,10 +450,15 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Poll category",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Poll categories (repeat parameter for multiple values)",
                         "name": "category",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -897,6 +971,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sheet/finish": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mark a sheet as finished (super admin or sheet owner).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sheets"
+                ],
+                "summary": "Finish sheet",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sheet identifier",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Status payload (status must be 'finished')",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SheetStatusUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/signup": {
             "post": {
                 "description": "Register a new user and receive access and refresh tokens.",
@@ -1010,6 +1154,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.AdminRequest": {
+            "type": "object",
+            "properties": {
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1149,7 +1304,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "description": {
                     "type": "string"
@@ -1337,7 +1495,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "description": {
                     "type": "string"
@@ -1435,13 +1596,23 @@ const docTemplate = `{
             "enum": [
                 "pending",
                 "published",
-                "rejected"
+                "rejected",
+                "finished"
             ],
             "x-enum-varnames": [
                 "SheetStatusPending",
                 "SheetStatusPublished",
-                "SheetStatusRejected"
+                "SheetStatusRejected",
+                "SheetStatusFinished"
             ]
+        },
+        "domain.SheetStatusUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/domain.SheetStatus"
+                }
+            }
         },
         "domain.SignupResponse": {
             "type": "object",

@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  domain.AdminRequest:
+    properties:
+      is_verified:
+        type: boolean
+      user_id:
+        type: string
+    type: object
   domain.ErrorResponse:
     properties:
       message:
@@ -93,7 +100,9 @@ definitions:
   domain.PollAdminResponse:
     properties:
       category:
-        type: string
+        items:
+          type: string
+        type: array
       description:
         type: string
       id:
@@ -218,7 +227,9 @@ definitions:
   domain.SheetCreatePoll:
     properties:
       category:
-        type: string
+        items:
+          type: string
+        type: array
       description:
         type: string
       options:
@@ -283,11 +294,18 @@ definitions:
     - pending
     - published
     - rejected
+    - finished
     type: string
     x-enum-varnames:
     - SheetStatusPending
     - SheetStatusPublished
     - SheetStatusRejected
+    - SheetStatusFinished
+  domain.SheetStatusUpdateRequest:
+    properties:
+      status:
+        $ref: '#/definitions/domain.SheetStatus'
+    type: object
   domain.SignupResponse:
     properties:
       accessToken:
@@ -411,6 +429,47 @@ paths:
       summary: List users
       tags:
       - Users
+  /api/v1/admin/users/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Activate or deactivate a user by toggling their verification status.
+      parameters:
+      - description: User identifier
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user status
+      tags:
+      - Users
   /api/v1/client/fetch:
     get:
       description: Retrieve published polls for a sheet.
@@ -479,10 +538,14 @@ paths:
         name: poll_type
         required: true
         type: string
-      - description: Poll category
+      - collectionFormat: csv
+        description: Poll categories (repeat parameter for multiple values)
         in: formData
+        items:
+          type: string
         name: category
-        type: string
+        required: true
+        type: array
       - description: Poll description
         in: formData
         name: description
@@ -574,10 +637,14 @@ paths:
         name: poll_type
         required: true
         type: string
-      - description: Poll category
+      - collectionFormat: csv
+        description: Poll categories (repeat parameter for multiple values)
         in: formData
+        items:
+          type: string
         name: category
-        type: string
+        required: true
+        type: array
       - description: Poll description
         in: formData
         name: description
@@ -909,6 +976,51 @@ paths:
       security:
       - BearerAuth: []
       summary: List sheets
+      tags:
+      - Sheets
+  /api/v1/sheet/finish:
+    put:
+      consumes:
+      - application/json
+      description: Mark a sheet as finished (super admin or sheet owner).
+      parameters:
+      - description: Sheet identifier
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Status payload (status must be 'finished')
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SheetStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Finish sheet
       tags:
       - Sheets
   /api/v1/signup:
