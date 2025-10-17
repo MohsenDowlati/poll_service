@@ -25,8 +25,36 @@ func (pr *pollRepository) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	_, err = collection.DeleteOne(ctx, bson.M{"_id": hexID})
-	return err
+	count, err := collection.DeleteOne(ctx, bson.M{"_id": hexID})
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return domain.ErrPollNotFound
+	}
+
+	return nil
+}
+
+func (pr *pollRepository) DeleteBySheetID(ctx context.Context, sheetID string) error {
+	collection := pr.database.Collection(pr.collection)
+
+	hexID, err := primitive.ObjectIDFromHex(sheetID)
+	if err != nil {
+		return err
+	}
+
+	for {
+		deleted, err := collection.DeleteOne(ctx, bson.M{"sheetID": hexID})
+		if err != nil {
+			return err
+		}
+
+		if deleted == 0 {
+			return nil
+		}
+	}
 }
 
 func (pr *pollRepository) Create(ctx context.Context, poll *domain.Poll) error {
@@ -91,7 +119,6 @@ func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 
 	filter := bson.M{"_id": poll.ID}
 
-	//TODO: config update
 	update := bson.M{
 		"$set": bson.M{
 			"title":       poll.Title,

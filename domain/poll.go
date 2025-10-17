@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -85,4 +86,7 @@ type PollRepository interface {
 	SubmitVote(ctx context.Context, id string, votes []int) error
 	AppendOpinionResponse(ctx context.Context, id string, responses []string) error
 	Delete(ctx context.Context, id string) error
+	DeleteBySheetID(ctx context.Context, sheetID string) error
 }
+
+var ErrPollNotFound = errors.New("poll not found")

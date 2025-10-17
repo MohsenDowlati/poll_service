@@ -78,29 +78,16 @@ func (ac *AdminController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	//TODO: what the hell is ID
-
 	var payload domain.AdminRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	paramID := strings.TrimSpace(c.Param("id"))
 	bodyID := strings.TrimSpace(payload.UserID)
 
-	targetID := paramID
-	if targetID == "" {
-		targetID = bodyID
-	}
-
-	if targetID == "" {
+	if bodyID == "" {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "user id is required"})
-		return
-	}
-
-	if bodyID != "" && bodyID != targetID {
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "user id mismatch"})
 		return
 	}
 
@@ -109,7 +96,7 @@ func (ac *AdminController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	if err := ac.AdminUsecase.VerifyUser(c, targetID, *payload.IsVerified); err != nil {
+	if err := ac.AdminUsecase.VerifyUser(c, bodyID, *payload.IsVerified); err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}

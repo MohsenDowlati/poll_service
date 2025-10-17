@@ -50,6 +50,24 @@ func (_m *PollRepository) Delete(ctx context.Context, id string) error {
 	return r0
 }
 
+// DeleteBySheetID provides a mock function with given fields: ctx, sheetID
+func (_m *PollRepository) DeleteBySheetID(ctx context.Context, sheetID string) error {
+	ret := _m.Called(ctx, sheetID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteBySheetID")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, sheetID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // EditPoll provides a mock function with given fields: ctx, poll
 func (_m *PollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error {
 	ret := _m.Called(ctx, poll)

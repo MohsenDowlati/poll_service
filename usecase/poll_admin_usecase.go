@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"time"
 )
@@ -16,6 +17,10 @@ func (p pollAdminUsecase) Delete(c context.Context, id string) error {
 	defer cancel()
 
 	err := p.repository.Delete(ctx, id)
+
+	if errors.Is(err, domain.ErrPollNotFound) {
+		return p.repository.DeleteBySheetID(ctx, id)
+	}
 
 	return err
 }

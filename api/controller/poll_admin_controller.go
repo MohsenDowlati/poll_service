@@ -237,6 +237,14 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 // @Router /api/v1/delete [put]
 func (pc *PollAdminController) Delete(c *gin.Context) {
 	id := c.Param("id")
+	if id == "" {
+		id = c.Query("id")
+	}
+
+	if id == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
+		return
+	}
 
 	err := pc.PollAdminUsecase.Delete(c, id)
 

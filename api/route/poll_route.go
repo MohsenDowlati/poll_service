@@ -19,9 +19,9 @@ func NewAdminPollRouter(env *bootstrap.Env, timeout time.Duration, db mongo.Data
 	}
 
 	group.POST("/create", apc.Create)
-	group.POST("/edit?id={id}", apc.Edit)
+	group.POST("/edit", apc.Edit)
 	group.GET("/admin/fetch", apc.GetBySheetID)
-	group.PUT("/delete?id={id}", apc.Delete)
+	group.PUT("/delete", apc.Delete)
 }
 
 func NewClientPollRouter(env *bootstrap.Env, timeout time.Duration, db mongo.Database, group *gin.RouterGroup) {
