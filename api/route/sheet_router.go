@@ -27,6 +27,7 @@ func NewSheetRouter(env *bootstrap.Env, db mongo.Database, contextTimeout time.D
 	group.POST("/sheet/create", sc.Create)
 	group.PUT("/sheet/delete", sc.Delete)
 	group.PUT("/sheet/finish", sc.Finish)
+	group.GET("/sheet/export/:id", sc.Export)
 	group.GET("/sheet/fetch", sc.Fetch)
 	group.GET("/sheet/fetch?id={id}", sc.FetchByID)
 }

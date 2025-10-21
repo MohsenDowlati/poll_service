@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -295,6 +296,74 @@ func (sc *SheetController) FetchByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, sheet)
+}
+
+// Export streams an Excel workbook containing sheet details, polls, and responses.
+// @Summary Export sheet
+// @Description Download sheet details alongside poll statistics as an Excel workbook.
+// @Tags Sheets
+// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Security BearerAuth
+// @Param id path string true "Sheet identifier"
+// @Success 200 {file} binary
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/sheet/export/{id} [get]
+func (sc *SheetController) Export(c *gin.Context) {
+	identifier := strings.TrimSpace(c.Param("id"))
+	if identifier == "" {
+		identifier = strings.TrimSpace(c.Query("id"))
+	}
+
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
+		return
+	}
+
+	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	userID := c.GetString("x-user-id")
+	userType := domain.UserType(c.GetString("x-user-type"))
+
+	if userID == "" || (userType != domain.SuperAdmin && sheet.UserID.Hex() != userID) {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	polls, _, err := sc.PollUsecase.GetBySheetID(c, identifier, domain.PaginationQuery{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	workbook, err := buildSheetWorkbook(sheet, polls)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+	defer func() { _ = workbook.Close() }()
+
+	buf, err := workbook.WriteToBuffer()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	filename := fmt.Sprintf("sheet-%s.xlsx", identifier)
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Header("Content-Length", strconv.Itoa(buf.Len()))
+	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 }
 
 // Delete removes a sheet owned by the authenticated admin.

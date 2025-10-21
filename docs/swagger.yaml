@@ -682,7 +682,10 @@ paths:
       - description: Registered email address
         in: formData
         name: email
-        required: true
+        type: string
+      - description: Registered phone number
+        in: formData
+        name: phone
         type: string
       - description: Password
         in: formData
@@ -944,6 +947,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete sheet
+      tags:
+      - Sheets
+  /api/v1/sheet/export/{id}:
+    get:
+      description: Download sheet details alongside poll statistics as an Excel workbook.
+      parameters:
+      - description: Sheet identifier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export sheet
       tags:
       - Sheets
   /api/v1/sheet/fetch:

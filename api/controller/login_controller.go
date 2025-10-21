@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -21,7 +22,8 @@ type LoginController struct {
 // @Tags Auth
 // @Accept mpfd
 // @Produce json
-// @Param email formData string true "Registered email address"
+// @Param email formData string false "Registered email address"
+// @Param phone formData string false "Registered phone number"
 // @Param password formData string true "Password"
 // @Success 200 {object} domain.LoginResponse
 // @Failure 400 {object} domain.ErrorResponse
@@ -37,10 +39,27 @@ func (lc *LoginController) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := lc.LoginUsecase.GetUserByPhone(c, request.Phone)
-	if err != nil {
-		c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "User not found with the given email"})
-		return
+	var user domain.User
+	identifier := strings.TrimSpace(request.Phone)
+	switch {
+	case identifier != "":
+		user, err = lc.LoginUsecase.GetUserByPhone(c, identifier)
+		if err != nil {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "User not found with the given phone"})
+			return
+		}
+	default:
+		identifier = strings.TrimSpace(request.Phone)
+		if identifier == "" {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "Either phone or email is required"})
+			return
+		}
+
+		user, err = lc.LoginUsecase.GetUserByEmail(c, identifier)
+		if err != nil {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "User not found with the given email"})
+			return
+		}
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)) != nil {

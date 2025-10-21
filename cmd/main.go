@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -54,13 +55,7 @@ func main() {
 	}
 
 	allowedOrigins := strings.Split(env.CORSAllowedOrigins, ",")
-	formattedOrigins := make([]string, 0, len(allowedOrigins))
-	for _, origin := range allowedOrigins {
-		trimmed := strings.TrimSpace(origin)
-		if trimmed != "" {
-			formattedOrigins = append(formattedOrigins, trimmed)
-		}
-	}
+	formattedOrigins := expandLocalhostOrigins(allowedOrigins)
 
 	if len(formattedOrigins) == 0 {
 		corsConfig.AllowAllOrigins = true
@@ -76,4 +71,45 @@ func main() {
 	route.Setup(env, timeout, db, gin)
 
 	gin.Run(env.ServerAddress)
+}
+
+func expandLocalhostOrigins(origins []string) []string {
+	formatted := make([]string, 0, len(origins))
+	seen := make(map[string]struct{})
+
+	appendUnique := func(origin string) {
+		if _, ok := seen[origin]; ok {
+			return
+		}
+		seen[origin] = struct{}{}
+		formatted = append(formatted, origin)
+	}
+
+	for _, origin := range origins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed == "" {
+			continue
+		}
+
+		appendUnique(trimmed)
+
+		parsed, err := url.Parse(trimmed)
+		if err != nil || parsed.Host == "" {
+			continue
+		}
+
+		if strings.Contains(parsed.Host, "localhost") {
+			clone := *parsed
+			clone.Host = strings.Replace(parsed.Host, "localhost", "127.0.0.1", 1)
+			appendUnique(clone.String())
+		}
+
+		if strings.Contains(parsed.Host, "127.0.0.1") {
+			clone := *parsed
+			clone.Host = strings.Replace(parsed.Host, "127.0.0.1", "localhost", 1)
+			appendUnique(clone.String())
+		}
+	}
+
+	return formatted
 }

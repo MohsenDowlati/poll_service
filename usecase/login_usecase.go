@@ -20,6 +20,13 @@ func (lu *loginUsecase) GetUserByPhone(c context.Context, phone string) (domain.
 	return lu.userRepository.GetByPhone(ctx, phone)
 }
 
+func (lu *loginUsecase) GetUserByEmail(c context.Context, email string) (domain.User, error) {
+	ctx, cancel := context.WithTimeout(c, lu.contextTimeout)
+	defer cancel()
+
+	return lu.userRepository.GetByEmail(ctx, email)
+}
+
 func NewLoginUsecase(userRepository domain.UserRepository, timeout time.Duration) domain.LoginUsecase {
 	return &loginUsecase{
 		userRepository: userRepository,

@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type sheetUseCase struct {
@@ -93,6 +95,9 @@ func (s sheetUseCase) buildSheetListItems(ctx context.Context, sheets []domain.S
 	for ownerID := range ownerIDs {
 		user, err := s.userRepository.GetByID(ctx, ownerID)
 		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				continue
+			}
 			return nil, err
 		}
 		ownerNames[ownerID] = user.Name

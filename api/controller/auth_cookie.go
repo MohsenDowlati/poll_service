@@ -19,6 +19,10 @@ func setAuthCookies(c *gin.Context, env *bootstrap.Env, accessToken string, refr
 
 	domainName := env.CookieDomain
 	secure := env.CookieSecure
+	if sameSite == http.SameSiteNoneMode && !secure {
+		// SameSite=None requires the Secure attribute to avoid browser rejection.
+		secure = true
+	}
 
 	if accessToken != "" {
 		c.SetCookie(domain.AccessTokenCookieName, accessToken, hoursToSeconds(env.AccessTokenExpiryHour), "/", domainName, secure, true)
