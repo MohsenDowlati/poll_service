@@ -5,12 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: app
-    container_name: app
+    image: poll_service:latest
+    container_name: poll_service
     restart: unless-stopped
     env_file: .env
     ports:
-      - "$PORT:$PORT"
+      # Provide a default if PORT is not set in .env
+      - "${PORT:-8080}:${PORT:-8080}"
     depends_on:
       - mongodb
 
@@ -23,7 +24,8 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=$DB_USER
       - MONGO_INITDB_ROOT_PASSWORD=$DB_PASS
     ports:
-      - "$DB_PORT:$DB_PORT"
+      # default mongo port with fallback
+      - "${DB_PORT:-27017}:${DB_PORT:-27017}"
     volumes:
       - dbdata:/data/db
 

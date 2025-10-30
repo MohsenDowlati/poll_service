@@ -67,7 +67,7 @@ func (_m *SheetUseCase) GetAll(c context.Context, pagination domain.PaginationQu
 
 	var r0 []domain.SheetListItem
 
-	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.Sheet); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.SheetListItem); ok {
 
 		r0 = rf(c, pagination)
 
@@ -130,7 +130,7 @@ func (_m *SheetUseCase) GetByUserID(c context.Context, userID string, pagination
 
 	var r0 []domain.SheetListItem
 
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Sheet); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.SheetListItem); ok {
 
 		r0 = rf(c, userID, pagination)
 
