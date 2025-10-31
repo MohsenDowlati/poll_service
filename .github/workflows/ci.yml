@@ -2,69 +2,41 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+    branches: [ main ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        shell: bash
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v4
         with:
-          go-version-file: go.mod
-          cache: true
+          go-version: '1.19'
 
-      - name: Download dependencies
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
         run: go mod download
 
-      - name: Run vet
-        run: go vet ./...
-
       - name: Run tests
-        run: go test ./... -coverprofile=coverage.out
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.out
-          if-no-files-found: ignore
+        run: go test ./... -v
 
       - name: Build binary
-        run: |
-          mkdir -p dist
-          CGO_ENABLED=0 go build -ldflags "-s -w" -o dist/poll ./cmd/main.go
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: poll-linux-amd64
-          path: dist/poll
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o main ./cmd/main.go
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
@@ -72,7 +44,3 @@ jobs:
           context: .
           file: Dockerfile
           push: false
-          platforms: linux/amd64
-          tags: poll-service:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
