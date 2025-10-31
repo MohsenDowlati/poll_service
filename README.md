@@ -60,6 +60,11 @@ docker compose up --build
 ```
 MongoDB data persists in the named `dbdata` volume. Stop with `Ctrl+C` and remove resources via `docker compose down` when you are finished.
 
+## CI/CD
+- `.github/workflows/ci.yml` runs linting steps, unit tests, and a container build on every push or pull request targeting `main`.
+- `.github/workflows/cd.yml` publishes production images to GHCR and, when deployment secrets are present, rolls them out on a remote host via SSH using `deploy/docker-compose.yaml`.
+- See `docs/deployment.md` for a step-by-step guide to configuring secrets, provisioning the remote server, and troubleshooting the automated rollout.
+
 ## Testing
 Run the full test suite:
 ```bash

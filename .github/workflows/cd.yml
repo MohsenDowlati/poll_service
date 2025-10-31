@@ -2,47 +2,167 @@ name: CD
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: poll-service
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+
+    defaults:
+      run:
+        shell: bash
+
+    outputs:
+      image_sha: ${{ steps.image-info.outputs.sha_tag }}
+      image_latest: ${{ steps.image-info.outputs.latest_tag }}
+      image_repository: ${{ steps.image-info.outputs.repository }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
-        if: secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN
-        uses: docker/login-action@v2
+      - name: Compute image metadata
+        id: image-info
+        run: |
+          set -e
+          owner="${{ secrets.REGISTRY_NAMESPACE }}"
+          if [ -z "$owner" ]; then
+            owner="${GITHUB_REPOSITORY_OWNER}"
+          fi
+          owner=$(printf '%s' "$owner" | tr '[:upper:]' '[:lower:]')
+          repo="${owner}/${IMAGE_NAME}"
+          sha_tag="${REGISTRY}/${repo}:${GITHUB_SHA}"
+          latest_tag="${REGISTRY}/${repo}:latest"
+          echo "repository=${REGISTRY}/${repo}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=${sha_tag}" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Build image (local)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: false
-          tags: poll_service:latest
-
-      - name: Push to Docker Hub
-        if: secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN
+      - name: Build and push image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/poll_service:latest
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.image-info.outputs.latest_tag }}
+            ${{ steps.image-info.outputs.sha_tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Deployment note
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: ${{ needs.build-and-push.result == 'success' && secrets.SSH_HOST != '' && secrets.SSH_USER != '' && secrets.SSH_PRIVATE_KEY != '' && secrets.PROD_ENV_FILE_BASE64 != '' }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve remote directory
+        id: remote-dir
         run: |
-          echo "If the workflow pushed an image, configure your deployment to pull ${DOCKERHUB_USERNAME:-<your-dockerhub-user>}/poll_service:latest"
+          remote_dir="${{ secrets.REMOTE_WORKDIR }}"
+          if [ -z "$remote_dir" ]; then
+            remote_dir="/opt/poll-service"
+          fi
+          echo "path=$remote_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare deployment bundle
+        env:
+          PROD_ENV_FILE_BASE64: ${{ secrets.PROD_ENV_FILE_BASE64 }}
+        run: |
+          set -e
+          if [ -z "$PROD_ENV_FILE_BASE64" ]; then
+            echo "The PROD_ENV_FILE_BASE64 secret is required for deployment." >&2
+            exit 1
+          fi
+          mkdir -p deploy/artifacts
+          echo "$PROD_ENV_FILE_BASE64" | base64 -d > deploy/artifacts/.env
+          cp deploy/docker-compose.yaml deploy/artifacts/docker-compose.yaml
+
+      - name: Ensure remote directory
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            mkdir -p "${{ steps.remote-dir.outputs.path }}"
+
+      - name: Upload compose bundle
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy/artifacts/docker-compose.yaml,deploy/artifacts/.env"
+          target: ${{ steps.remote-dir.outputs.path }}
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          IMAGE_SHA: ${{ needs.build-and-push.outputs.image_sha }}
+          REGISTRY: ${{ env.REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd "${{ steps.remote-dir.outputs.path }}"
+            if [ -z "${REGISTRY_USERNAME}" ] || [ -z "${REGISTRY_PASSWORD}" ]; then
+              echo "Registry credentials are required to pull the image on the remote host." >&2
+              exit 1
+            fi
+            echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY}" -u "${REGISTRY_USERNAME}" --password-stdin
+            POLL_IMAGE="${IMAGE_SHA}" docker compose -f docker-compose.yaml pull web
+            POLL_IMAGE="${IMAGE_SHA}" docker compose -f docker-compose.yaml up -d --remove-orphans
+            docker logout "${REGISTRY}"
