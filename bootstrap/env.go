@@ -14,11 +14,13 @@ type Env struct {
 	AppEnv                 string
 	ServerAddress          string
 	ContextTimeout         int
+	MongoURI               string
 	DBHost                 string
 	DBPort                 string
 	DBUser                 string
 	DBPass                 string
 	DBName                 string
+	DBAuthSource           string
 	AccessTokenExpiryHour  int
 	RefreshTokenExpiryHour int
 	AccessTokenSecret      string
@@ -41,11 +43,13 @@ func NewEnv() *Env {
 		AppEnv:                 getEnv("APP_ENV", "development"),
 		ServerAddress:          getEnv("SERVER_ADDRESS", ":8080"),
 		ContextTimeout:         getEnvAsInt("CONTEXT_TIMEOUT", 2),
+		MongoURI:               getFirstNonEmpty("MONGODB_URI", "DATABASE_URL"),
 		DBHost:                 getEnv("DB_HOST", ""),
 		DBPort:                 getEnv("DB_PORT", ""),
 		DBUser:                 getEnv("DB_USER", ""),
 		DBPass:                 getEnv("DB_PASS", ""),
 		DBName:                 getEnv("DB_NAME", ""),
+		DBAuthSource:           getEnv("DB_AUTH_SOURCE", ""),
 		AccessTokenExpiryHour:  getEnvAsInt("ACCESS_TOKEN_EXPIRY_HOUR", 2),
 		RefreshTokenExpiryHour: getEnvAsInt("REFRESH_TOKEN_EXPIRY_HOUR", 168),
 		AccessTokenSecret:      getEnv("ACCESS_TOKEN_SECRET", ""),
@@ -63,6 +67,13 @@ func NewEnv() *Env {
 
 	if strings.EqualFold(env.AppEnv, "development") {
 		log.Println("The App is running in development env")
+	}
+
+	if env.DBAuthSource == "" {
+		env.DBAuthSource = env.DBName
+		if env.DBAuthSource == "" {
+			env.DBAuthSource = "admin"
+		}
 	}
 
 	return env
@@ -92,6 +103,15 @@ func getEnv(key, defaultVal string) string {
 		return value
 	}
 	return defaultVal
+}
+
+func getFirstNonEmpty(keys ...string) string {
+	for _, key := range keys {
+		if val, ok := os.LookupEnv(key); ok && strings.TrimSpace(val) != "" {
+			return strings.TrimSpace(val)
+		}
+	}
+	return ""
 }
 
 func getEnvAsInt(key string, defaultVal int) int {

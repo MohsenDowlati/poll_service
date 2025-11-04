@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
@@ -13,15 +15,9 @@ func NewMongoDatabase(env *Env) mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	dbHost := env.DBHost
-	dbPort := env.DBPort
-	dbUser := env.DBUser
-	dbPass := env.DBPass
-
-	mongodbURI := fmt.Sprintf("mongodb://%s:%s@%s:%s", dbUser, dbPass, dbHost, dbPort)
-
-	if dbUser == "" || dbPass == "" {
-		mongodbURI = fmt.Sprintf("mongodb://%s:%s", dbHost, dbPort)
+	mongodbURI := buildMongoURI(env)
+	if mongodbURI == "" {
+		log.Fatal("MongoDB configuration missing: provide either MONGODB_URI or DB_HOST/DB_PORT")
 	}
 
 	client, err := mongo.NewClient(mongodbURI)
@@ -53,4 +49,37 @@ func CloseMongoDBConnection(client mongo.Client) {
 	}
 
 	log.Println("Connection to MongoDB closed.")
+}
+
+func buildMongoURI(env *Env) string {
+	if strings.TrimSpace(env.MongoURI) != "" {
+		return strings.TrimSpace(env.MongoURI)
+	}
+
+	if strings.TrimSpace(env.DBHost) == "" {
+		return ""
+	}
+
+	hostPort := strings.TrimSpace(env.DBHost)
+	if strings.TrimSpace(env.DBPort) != "" {
+		hostPort = fmt.Sprintf("%s:%s", hostPort, strings.TrimSpace(env.DBPort))
+	}
+
+	dbPath := ""
+	if strings.TrimSpace(env.DBName) != "" {
+		dbPath = "/" + strings.TrimSpace(env.DBName)
+	}
+
+	if strings.TrimSpace(env.DBUser) != "" && strings.TrimSpace(env.DBPass) != "" {
+		authSource := strings.TrimSpace(env.DBAuthSource)
+		user := url.QueryEscape(strings.TrimSpace(env.DBUser))
+		pass := url.QueryEscape(strings.TrimSpace(env.DBPass))
+		query := ""
+		if authSource != "" {
+			query = fmt.Sprintf("?authSource=%s", url.QueryEscape(authSource))
+		}
+		return fmt.Sprintf("mongodb://%s:%s@%s%s%s", user, pass, hostPort, dbPath, query)
+	}
+
+	return fmt.Sprintf("mongodb://%s%s", hostPort, dbPath)
 }
