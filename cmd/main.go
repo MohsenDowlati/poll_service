@@ -36,6 +36,10 @@ func main() {
 
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 
+	if err := bootstrap.SeedSuperAdmin(env, db, timeout); err != nil {
+		log.Fatalf("failed to seed super admin: %v", err)
+	}
+
 	gin := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
