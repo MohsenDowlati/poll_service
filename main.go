@@ -7,13 +7,6 @@ import (
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/internal/server"
 )
 
-// @title           Poll Service API
-// @version         1.0
-// @description     API documentation for the Poll service.
-// @BasePath        /api/v1
-// @securityDefinitions.apikey BearerAuth
-// @in              header
-// @name            Authorization
 func main() {
 	if err := server.Run(); err != nil {
 		log.Fatalf("failed to start server: %v", err)
