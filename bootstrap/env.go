@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"errors"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -65,6 +66,12 @@ func NewEnv() *Env {
 		SuperAdminOrganization: getEnv("SUPER_ADMIN_ORGANIZATION", ""),
 	}
 
+	if strings.TrimSpace(env.DBName) == "" && strings.TrimSpace(env.MongoURI) != "" {
+		if db := extractDBNameFromURI(env.MongoURI); db != "" {
+			env.DBName = db
+		}
+	}
+
 	if strings.EqualFold(env.AppEnv, "development") {
 		log.Println("The App is running in development env")
 	}
@@ -77,6 +84,24 @@ func NewEnv() *Env {
 	}
 
 	return env
+}
+
+func extractDBNameFromURI(uri string) string {
+	parsed, err := url.Parse(strings.TrimSpace(uri))
+	if err != nil {
+		return ""
+	}
+
+	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return ""
+	}
+
+	if idx := strings.Index(path, "/"); idx != -1 {
+		path = path[:idx]
+	}
+
+	return path
 }
 
 func loadLocalEnv() {
