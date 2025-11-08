@@ -58,6 +58,7 @@ func Run() error {
 		corsConfig.AllowOrigins = formattedOrigins
 	}
 
+	setGinMode(env.AppEnv)
 	router := gin.Default()
 	router.Use(cors.New(corsConfig))
 
@@ -70,6 +71,17 @@ func Run() error {
 	}
 
 	return nil
+}
+
+func setGinMode(appEnv string) {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "production", "prod", "release":
+		gin.SetMode(gin.ReleaseMode)
+	case "test", "testing":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
 }
 
 func expandLocalhostOrigins(origins []string) []string {
