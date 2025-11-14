@@ -54,10 +54,10 @@ func (_m *SheetRepository) Delete(ctx context.Context, id string) error {
 	return r0
 }
 
-// GetAll provides a mock function with given fields: ctx, pagination
-func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+// GetAll provides a mock function with given fields: ctx, pagination, filter
+func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.Sheet, int64, error) {
 
-	ret := _m.Called(ctx, pagination)
+	ret := _m.Called(ctx, pagination, filter)
 
 	if len(ret) == 0 {
 
@@ -67,9 +67,9 @@ func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 
 	var r0 []domain.Sheet
 
-	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery) []domain.Sheet); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, domain.PaginationQuery, domain.SheetListFilter) []domain.Sheet); ok {
 
-		r0 = rf(ctx, pagination)
+		r0 = rf(ctx, pagination, filter)
 
 	} else {
 
@@ -85,9 +85,9 @@ func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 
 	if len(ret) > 1 {
 
-		if rf, ok := ret.Get(1).(func(context.Context, domain.PaginationQuery) int64); ok {
+		if rf, ok := ret.Get(1).(func(context.Context, domain.PaginationQuery, domain.SheetListFilter) int64); ok {
 
-			r1 = rf(ctx, pagination)
+			r1 = rf(ctx, pagination, filter)
 
 		} else if ret.Get(1) != nil {
 
@@ -101,9 +101,9 @@ func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 
 	if len(ret) > 2 {
 
-		if rf, ok := ret.Get(2).(func(context.Context, domain.PaginationQuery) error); ok {
+		if rf, ok := ret.Get(2).(func(context.Context, domain.PaginationQuery, domain.SheetListFilter) error); ok {
 
-			r2 = rf(ctx, pagination)
+			r2 = rf(ctx, pagination, filter)
 
 		} else {
 
@@ -117,10 +117,10 @@ func (_m *SheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 
 }
 
-// GetByUserID provides a mock function with given fields: ctx, userID
-func (_m *SheetRepository) GetByUserID(ctx context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+// GetByUserID provides a mock function with given fields: ctx, userID, pagination, filter
+func (_m *SheetRepository) GetByUserID(ctx context.Context, userID string, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.Sheet, int64, error) {
 
-	ret := _m.Called(ctx, userID, pagination)
+	ret := _m.Called(ctx, userID, pagination, filter)
 
 	if len(ret) == 0 {
 
@@ -130,9 +130,9 @@ func (_m *SheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 
 	var r0 []domain.Sheet
 
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery) []domain.Sheet); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.PaginationQuery, domain.SheetListFilter) []domain.Sheet); ok {
 
-		r0 = rf(ctx, userID, pagination)
+		r0 = rf(ctx, userID, pagination, filter)
 
 	} else {
 
@@ -148,9 +148,9 @@ func (_m *SheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 
 	if len(ret) > 1 {
 
-		if rf, ok := ret.Get(1).(func(context.Context, string, domain.PaginationQuery) int64); ok {
+		if rf, ok := ret.Get(1).(func(context.Context, string, domain.PaginationQuery, domain.SheetListFilter) int64); ok {
 
-			r1 = rf(ctx, userID, pagination)
+			r1 = rf(ctx, userID, pagination, filter)
 
 		} else if ret.Get(1) != nil {
 
@@ -164,9 +164,9 @@ func (_m *SheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 
 	if len(ret) > 2 {
 
-		if rf, ok := ret.Get(2).(func(context.Context, string, domain.PaginationQuery) error); ok {
+		if rf, ok := ret.Get(2).(func(context.Context, string, domain.PaginationQuery, domain.SheetListFilter) error); ok {
 
-			r2 = rf(ctx, userID, pagination)
+			r2 = rf(ctx, userID, pagination, filter)
 
 		} else {
 

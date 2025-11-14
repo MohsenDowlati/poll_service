@@ -1010,6 +1010,36 @@ const docTemplate = `{
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated owner IDs (ObjectID hex strings, super admin only)",
+                        "name": "owners",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated statuses (pending,published,rejected,finished)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Venue substring (case-insensitive)",
+                        "name": "venue",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created-at start (RFC3339 or YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created-at end (RFC3339 or YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
                     }
                 ],
                 "responses": {

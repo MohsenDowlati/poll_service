@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
@@ -16,7 +17,7 @@ type sheetRepository struct {
 	collection string
 }
 
-func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.Sheet, int64, error) {
 	collection := sr.database.Collection(sr.collection)
 
 	UID, err := primitive.ObjectIDFromHex(userID)
@@ -24,7 +25,8 @@ func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 		return nil, 0, err
 	}
 
-	filter := bson.M{"userID": UID}
+	query := bson.M{"userID": UID}
+	applySheetFilters(query, filter)
 	findOptions := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
 	if skip := pagination.Skip(); skip > 0 {
 		findOptions.SetSkip(skip)
@@ -33,7 +35,7 @@ func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 		findOptions.SetLimit(limit)
 	}
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
+	cursor, err := collection.Find(ctx, query, findOptions)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -46,7 +48,7 @@ func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 		result = []domain.Sheet{}
 	}
 
-	total, err := collection.CountDocuments(ctx, filter)
+	total, err := collection.CountDocuments(ctx, query)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,8 +76,14 @@ func (sr *sheetRepository) Create(ctx context.Context, sheet domain.Sheet) error
 	return err
 }
 
-func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.PaginationQuery) ([]domain.Sheet, int64, error) {
+func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.Sheet, int64, error) {
 	collection := sr.database.Collection(sr.collection)
+
+	query := bson.M{}
+	if len(filter.OwnerIDs) > 0 {
+		query["userID"] = bson.M{"$in": filter.OwnerIDs}
+	}
+	applySheetFilters(query, filter)
 
 	findOptions := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
 	if skip := pagination.Skip(); skip > 0 {
@@ -85,7 +93,7 @@ func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 		findOptions.SetLimit(limit)
 	}
 
-	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
+	cursor, err := collection.Find(ctx, query, findOptions)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -98,7 +106,7 @@ func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 		sheets = []domain.Sheet{}
 	}
 
-	total, err := collection.CountDocuments(ctx, bson.D{})
+	total, err := collection.CountDocuments(ctx, query)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -136,6 +144,41 @@ func (sr *sheetRepository) UpdateStatus(ctx context.Context, id string, status d
 
 	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
 	return err
+}
+
+func applySheetFilters(criteria bson.M, filter domain.SheetListFilter) {
+	if criteria == nil {
+		return
+	}
+
+	if len(filter.Statuses) > 0 {
+		statuses := make([]domain.SheetStatus, 0, len(filter.Statuses))
+		for _, status := range filter.Statuses {
+			if status == "" {
+				continue
+			}
+			statuses = append(statuses, status)
+		}
+
+		if len(statuses) > 0 {
+			criteria["status"] = bson.M{"$in": statuses}
+		}
+	}
+
+	if venue := strings.TrimSpace(filter.Venue); venue != "" {
+		criteria["venue"] = primitive.Regex{Pattern: venue, Options: "i"}
+	}
+
+	dateRange := bson.M{}
+	if filter.DateFrom != nil {
+		dateRange["$gte"] = filter.DateFrom.UTC()
+	}
+	if filter.DateTo != nil {
+		dateRange["$lte"] = filter.DateTo.UTC()
+	}
+	if len(dateRange) > 0 {
+		criteria["createdAt"] = dateRange
+	}
 }
 
 func NewSheetRepository(db mongo.Database, collection string) domain.SheetRepository {

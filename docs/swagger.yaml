@@ -998,6 +998,27 @@ paths:
         in: query
         name: page_size
         type: integer
+      - description: Comma-separated owner IDs (ObjectID hex strings, super admin
+          only)
+        in: query
+        name: owners
+        type: string
+      - description: Comma-separated statuses (pending,published,rejected,finished)
+        in: query
+        name: status
+        type: string
+      - description: Venue substring (case-insensitive)
+        in: query
+        name: venue
+        type: string
+      - description: Created-at start (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Created-at end (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
       produces:
       - application/json
       responses:

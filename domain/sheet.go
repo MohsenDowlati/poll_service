@@ -57,14 +57,22 @@ type SheetStatusUpdateRequest struct {
 	Status SheetStatus `json:"status" form:"status"`
 }
 
+type SheetListFilter struct {
+	OwnerIDs []primitive.ObjectID
+	Statuses []SheetStatus
+	Venue    string
+	DateFrom *time.Time
+	DateTo   *time.Time
+}
+
 func (r SheetCreateRequest) EffectiveTitle() string {
 	return r.Title
 }
 
 type SheetRepository interface {
 	Create(ctx context.Context, sheet Sheet) error
-	GetAll(ctx context.Context, pagination PaginationQuery) ([]Sheet, int64, error)
-	GetByUserID(ctx context.Context, userID string, pagination PaginationQuery) ([]Sheet, int64, error)
+	GetAll(ctx context.Context, pagination PaginationQuery, filter SheetListFilter) ([]Sheet, int64, error)
+	GetByUserID(ctx context.Context, userID string, pagination PaginationQuery, filter SheetListFilter) ([]Sheet, int64, error)
 	Delete(ctx context.Context, id string) error
 	GetByID(ctx context.Context, id string) (Sheet, error)
 	UpdateStatus(ctx context.Context, id string, status SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error
@@ -72,9 +80,9 @@ type SheetRepository interface {
 
 type SheetUseCase interface {
 	Create(c context.Context, sheet Sheet) error
-	GetAll(c context.Context, pagination PaginationQuery) ([]SheetListItem, int64, error)
+	GetAll(c context.Context, pagination PaginationQuery, filter SheetListFilter) ([]SheetListItem, int64, error)
 	Delete(c context.Context, id string) error
-	GetByUserID(c context.Context, userID string, pagination PaginationQuery) ([]SheetListItem, int64, error)
+	GetByUserID(c context.Context, userID string, pagination PaginationQuery, filter SheetListFilter) ([]SheetListItem, int64, error)
 	GetByID(c context.Context, id string) (Sheet, error)
 	UpdateStatus(c context.Context, id string, status SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error
 }

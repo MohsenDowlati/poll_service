@@ -16,11 +16,13 @@ type sheetUseCase struct {
 	contextTimeout time.Duration
 }
 
-func (s sheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery) ([]domain.SheetListItem, int64, error) {
+func (s sheetUseCase) GetByUserID(c context.Context, userID string, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.SheetListItem, int64, error) {
 	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
 	defer cancel()
 
-	sheets, total, err := s.repository.GetByUserID(ctx, userID, pagination)
+	filter.OwnerIDs = nil
+
+	sheets, total, err := s.repository.GetByUserID(ctx, userID, pagination, filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -47,11 +49,11 @@ func (s sheetUseCase) Create(c context.Context, sheet domain.Sheet) error {
 	return s.repository.Create(ctx, sheet)
 }
 
-func (s sheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery) ([]domain.SheetListItem, int64, error) {
+func (s sheetUseCase) GetAll(c context.Context, pagination domain.PaginationQuery, filter domain.SheetListFilter) ([]domain.SheetListItem, int64, error) {
 	ctx, cancel := context.WithTimeout(c, s.contextTimeout)
 	defer cancel()
 
-	sheets, total, err := s.repository.GetAll(ctx, pagination)
+	sheets, total, err := s.repository.GetAll(ctx, pagination, filter)
 	if err != nil {
 		return nil, 0, err
 	}

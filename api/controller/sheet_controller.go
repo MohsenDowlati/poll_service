@@ -220,6 +220,11 @@ func (sc *SheetController) Create(c *gin.Context) {
 // @Security BearerAuth
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
+// @Param owners query string false "Comma-separated owner IDs (ObjectID hex strings, super admin only)"
+// @Param status query string false "Comma-separated statuses (pending,published,rejected,finished)"
+// @Param venue query string false "Venue substring (case-insensitive)"
+// @Param date_from query string false "Created-at start (RFC3339 or YYYY-MM-DD)"
+// @Param date_to query string false "Created-at end (RFC3339 or YYYY-MM-DD)"
 // @Success 200 {object} domain.SheetListResponse
 // @Failure 401 {object} domain.ErrorResponse
 // @Failure 500 {object} domain.ErrorResponse
@@ -234,15 +239,23 @@ func (sc *SheetController) Fetch(c *gin.Context) {
 	}
 
 	pagination := extractPagination(c)
+	filter, err := buildSheetListFilter(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
 
 	var sheets []domain.SheetListItem
 	var total int64
-	var err error
 
 	if userType == domain.SuperAdmin {
-		sheets, total, err = sc.SheetuseCase.GetAll(c, pagination)
+		sheets, total, err = sc.SheetuseCase.GetAll(c, pagination, filter)
 	} else if userType == domain.VerifiedAdmin {
-		sheets, total, err = sc.SheetuseCase.GetByUserID(c, userID, pagination)
+		if len(filter.OwnerIDs) > 0 {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "owners filter is restricted to super admins"})
+			return
+		}
+		sheets, total, err = sc.SheetuseCase.GetByUserID(c, userID, pagination, filter)
 	} else {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
 		return
@@ -498,4 +511,88 @@ func (sc *SheetController) Finish(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "sheet marked as finished"})
+}
+
+func buildSheetListFilter(c *gin.Context) (domain.SheetListFilter, error) {
+	var filter domain.SheetListFilter
+
+	if ownerParam := strings.TrimSpace(c.Query("owners")); ownerParam != "" {
+		owners := strings.Split(ownerParam, ",")
+		filter.OwnerIDs = make([]primitive.ObjectID, 0, len(owners))
+		for _, raw := range owners {
+			ownerID := strings.TrimSpace(raw)
+			if ownerID == "" {
+				continue
+			}
+
+			objectID, err := primitive.ObjectIDFromHex(ownerID)
+			if err != nil {
+				return filter, fmt.Errorf("invalid owner id '%s'", ownerID)
+			}
+			filter.OwnerIDs = append(filter.OwnerIDs, objectID)
+		}
+	}
+
+	if statusParam := strings.TrimSpace(c.Query("status")); statusParam != "" {
+		statusParts := strings.Split(statusParam, ",")
+		filter.Statuses = make([]domain.SheetStatus, 0, len(statusParts))
+		for _, raw := range statusParts {
+			value := domain.SheetStatus(strings.ToLower(strings.TrimSpace(raw)))
+			if value == "" {
+				continue
+			}
+			if !isValidSheetStatus(value) {
+				return filter, fmt.Errorf("invalid status '%s'", raw)
+			}
+			filter.Statuses = append(filter.Statuses, value)
+		}
+	}
+
+	if venue := strings.TrimSpace(c.Query("venue")); venue != "" {
+		filter.Venue = venue
+	}
+
+	if dateFrom := strings.TrimSpace(c.Query("date_from")); dateFrom != "" {
+		parsed, err := parseSheetDate(dateFrom)
+		if err != nil {
+			return filter, fmt.Errorf("invalid date_from: %w", err)
+		}
+		filter.DateFrom = &parsed
+	}
+
+	if dateTo := strings.TrimSpace(c.Query("date_to")); dateTo != "" {
+		parsed, err := parseSheetDate(dateTo)
+		if err != nil {
+			return filter, fmt.Errorf("invalid date_to: %w", err)
+		}
+		filter.DateTo = &parsed
+	}
+
+	if filter.DateFrom != nil && filter.DateTo != nil && filter.DateFrom.After(*filter.DateTo) {
+		return filter, fmt.Errorf("date_from must be before date_to")
+	}
+
+	return filter, nil
+}
+
+func parseSheetDate(value string) (time.Time, error) {
+	layouts := []string{time.RFC3339, "2006-01-02"}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("use RFC3339 or YYYY-MM-DD format")
+}
+
+func isValidSheetStatus(status domain.SheetStatus) bool {
+	switch status {
+	case domain.SheetStatusPending,
+		domain.SheetStatusPublished,
+		domain.SheetStatusRejected,
+		domain.SheetStatusFinished:
+		return true
+	default:
+		return false
+	}
 }
