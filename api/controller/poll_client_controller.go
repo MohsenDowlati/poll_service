@@ -87,6 +87,11 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 		return
 	}
 
+	if sheet.Status != domain.SheetStatusPublished {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "sheet is not published"})
+		return
+	}
+
 	var result []domain.PollClientResponse
 
 	for _, poll := range polls {
