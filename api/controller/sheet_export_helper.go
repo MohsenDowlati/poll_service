@@ -25,44 +25,46 @@ func buildSheetWorkbook(sheet domain.Sheet, polls []domain.Poll) (*excelize.File
 
 	row := 1
 	if !sheet.ID.IsZero() {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Sheet ID", sheet.ID.Hex())
+		row = writeLabelValueRow(workbook, summarySheetName, row, "ID", sheet.ID.Hex())
 	}
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Title", sheet.Title)
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Venue", sheet.Venue)
+	row = writeLabelValueRow(workbook, summarySheetName, row, "عنوان", sheet.Title)
+	row = writeLabelValueRow(workbook, summarySheetName, row, "سالن", sheet.Venue)
 	if sheet.Description != "" {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Description", sheet.Description)
+		row = writeLabelValueRow(workbook, summarySheetName, row, "توضیح", sheet.Description)
 	}
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Status", string(sheet.Status))
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Phone Required", yesNo(sheet.IsPhoneRequired))
+	row = writeLabelValueRow(workbook, summarySheetName, row, "وضعیت", string(sheet.Status))
+	row = writeLabelValueRow(workbook, summarySheetName, row, "شماره تلفن", yesNo(sheet.IsPhoneRequired))
 	if !sheet.CreatedAt.IsZero() {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Created At", formatDateTime(sheet.CreatedAt))
+		row = writeLabelValueRow(workbook, summarySheetName, row, "زمان ساخت", formatDateTime(sheet.CreatedAt))
 	}
 	if !sheet.UpdatedAt.IsZero() && !sheet.UpdatedAt.Equal(sheet.CreatedAt) {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Updated At", formatDateTime(sheet.UpdatedAt))
+		row = writeLabelValueRow(workbook, summarySheetName, row, "زمان بروزرسانی", formatDateTime(sheet.UpdatedAt))
 	}
 	if !sheet.ApprovedAt.IsZero() {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Approved At", formatDateTime(sheet.ApprovedAt))
+		row = writeLabelValueRow(workbook, summarySheetName, row, "زمان تایید شدن", formatDateTime(sheet.ApprovedAt))
 	}
 
 	if row > 1 {
 		row++
 	}
 
-	totalParticipants := 0
+	maxParticipants := 0
 	opinionResponses := 0
 	for _, poll := range polls {
-		totalParticipants += poll.Participant
+		if poll.Participant > maxParticipants {
+			maxParticipants = poll.Participant
+		}
 		if len(poll.Responses) > 0 {
 			opinionResponses += len(poll.Responses)
 		}
 	}
 
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Poll Count", len(polls))
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Total Participants", totalParticipants)
+	row = writeLabelValueRow(workbook, summarySheetName, row, "تعداد نظرسنجی", len(polls))
+	row = writeLabelValueRow(workbook, summarySheetName, row, "تعداد شرکت‌کننده‌ها", maxParticipants)
 	if opinionResponses > 0 {
-		row = writeLabelValueRow(workbook, summarySheetName, row, "Opinion Responses", opinionResponses)
+		row = writeLabelValueRow(workbook, summarySheetName, row, "تعداد نظرات", opinionResponses)
 	}
-	row = writeLabelValueRow(workbook, summarySheetName, row, "Exported At", formatDateTime(time.Now()))
+	row = writeLabelValueRow(workbook, summarySheetName, row, "زمان ساخت فایل اکسل", formatDateTime(time.Now()))
 
 	usedSheetNames := map[string]int{summarySheetName: 1}
 
@@ -78,26 +80,29 @@ func buildSheetWorkbook(sheet domain.Sheet, polls []domain.Poll) (*excelize.File
 		_ = workbook.SetColWidth(sheetName, "B", "C", 80)
 
 		row := 1
-		row = writeLabelValueRow(workbook, sheetName, row, "Title", poll.Title)
+		row = writeLabelValueRow(workbook, sheetName, row, "سوال", poll.Title)
 		if poll.Description != "" {
-			row = writeLabelValueRow(workbook, sheetName, row, "Description", poll.Description)
+			row = writeLabelValueRow(workbook, sheetName, row, "توضیحات", poll.Description)
 		}
-		row = writeLabelValueRow(workbook, sheetName, row, "Type", string(poll.PollType))
+		row = writeLabelValueRow(workbook, sheetName, row, "نوع سوال", handleSheetType(poll.PollType))
 		if len(poll.Category) > 0 {
-			row = writeLabelValueRow(workbook, sheetName, row, "Categories", strings.Join(poll.Category, ", "))
+			row = writeLabelValueRow(workbook, sheetName, row, "دسته‌بندی‌ها", strings.Join(poll.Category, ", "))
 		}
-		row = writeLabelValueRow(workbook, sheetName, row, "Participants", poll.Participant)
+		row = writeLabelValueRow(workbook, sheetName, row, "تعداد شرکت‌کننده‌ها", poll.Participant)
 
 		row++
 
 		if len(poll.Options) > 0 {
-			_ = workbook.SetCellValue(sheetName, cellRef("A", row), "Option")
-			_ = workbook.SetCellValue(sheetName, cellRef("B", row), "Votes")
+			_ = workbook.SetCellValue(sheetName, cellRef("A", row), "گزینه")
+			_ = workbook.SetCellValue(sheetName, cellRef("B", row), "آرا")
 			row++
 			for optIndex, option := range poll.Options {
 				vote := 0
 				if optIndex < len(poll.Votes) {
 					vote = poll.Votes[optIndex]
+					if poll.PollType == domain.PollTypeSlide {
+						vote /= len(poll.Votes)
+					}
 				}
 				_ = workbook.SetCellValue(sheetName, cellRef("A", row), option)
 				_ = workbook.SetCellValue(sheetName, cellRef("B", row), vote)
@@ -107,8 +112,8 @@ func buildSheetWorkbook(sheet domain.Sheet, polls []domain.Poll) (*excelize.File
 
 		if len(poll.Responses) > 0 {
 			row++
-			_ = workbook.SetCellValue(sheetName, cellRef("A", row), "Response #")
-			_ = workbook.SetCellValue(sheetName, cellRef("B", row), "Text")
+			_ = workbook.SetCellValue(sheetName, cellRef("A", row), "پاسخ #")
+			_ = workbook.SetCellValue(sheetName, cellRef("B", row), "متن")
 			row++
 			for respIndex, response := range poll.Responses {
 				_ = workbook.SetCellValue(sheetName, cellRef("A", row), respIndex+1)
@@ -208,4 +213,20 @@ func sanitizeSheetName(name string) string {
 	}
 
 	return cleaned
+}
+
+func handleSheetType(ty domain.PollType) string {
+	if ty == domain.PollTypeOpinion {
+		return "نظر"
+	}
+	if ty == domain.PollTypeSingleChoice {
+		return "تک گزینه‌ای"
+	}
+	if ty == domain.PollTypeMultiChoice {
+		return "چند گزینه‌ای"
+	}
+	if ty == domain.PollTypeSlide {
+		return "امتیاز‌دهی"
+	}
+	return ""
 }

@@ -203,6 +203,15 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 	var responseItems []domain.PollAdminResponse
 
 	for _, poll := range polls {
+		var responses []string
+		if poll.PollType == domain.PollTypeOpinion {
+			if len(poll.Responses) > 0 {
+				responses = append([]string(nil), poll.Responses...)
+			} else {
+				responses = []string{}
+			}
+		}
+
 		responseItems = append(responseItems, domain.PollAdminResponse{
 			ID:          poll.ID.Hex(),
 			Title:       poll.Title,
@@ -211,7 +220,7 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 			Category:    poll.Category,
 			Participant: poll.Participant,
 			Votes:       poll.Votes,
-			Responses:   poll.Responses,
+			Responses:   responses,
 			Description: poll.Description,
 		})
 	}
