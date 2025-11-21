@@ -16,6 +16,15 @@ func (au *adminUsecase) Delete(c context.Context, userID string) error {
 	ctx, cancel := context.WithTimeout(c, au.contextTimeout)
 	defer cancel()
 
+	user, err := au.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user.Admin == domain.SuperAdmin {
+		return domain.ErrCannotDeleteSuperAdmin
+	}
+
 	return au.userRepository.DeleteUser(ctx, userID)
 }
 

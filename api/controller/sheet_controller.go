@@ -379,9 +379,9 @@ func (sc *SheetController) Export(c *gin.Context) {
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 }
 
-// Delete removes a sheet owned by the authenticated admin.
+// Delete removes a sheet (super admin or sheet owner).
 // @Summary Delete sheet
-// @Description Delete a sheet by identifier.
+// @Description Delete a sheet by identifier (super admin or sheet owner).
 // @Tags Sheets
 // @Produce json
 // @Security BearerAuth
@@ -421,7 +421,8 @@ func (sc *SheetController) Delete(c *gin.Context) {
 		return
 	}
 
-	if userType != domain.SuperAdmin && sheet.UserID.Hex() != userID {
+	isSuperAdmin := userType == domain.SuperAdmin
+	if !isSuperAdmin && sheet.UserID.Hex() != userID {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
 		return
 	}
@@ -429,6 +430,13 @@ func (sc *SheetController) Delete(c *gin.Context) {
 	if err = sc.SheetuseCase.Delete(c, identifier); err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
+	}
+
+	if sc.PollUsecase != nil {
+		if err = sc.PollUsecase.Delete(c, identifier); err != nil {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "sheet deleted!"})

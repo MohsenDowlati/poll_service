@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +19,11 @@ const (
 	VerifiedAdmin UserType = "verified_admin"
 	NewUser       UserType = "new_user"
 	CanceledUser  UserType = "canceled_user"
+)
+
+var (
+	ErrUserNotFound           = errors.New("user not found")
+	ErrCannotDeleteSuperAdmin = errors.New("cannot delete super admin user")
 )
 
 type User struct {

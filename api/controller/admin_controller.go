@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AdminController struct {
@@ -107,4 +109,54 @@ func (ac *AdminController) UpdateStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: message})
+}
+
+// Delete removes a user who is not a super admin (super admin only).
+// @Summary Delete user
+// @Description Delete a user by identifier; super admin accounts cannot be removed.
+// @Tags Users
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User identifier"
+// @Success 200 {object} domain.SuccessResponse
+// @Failure 400 {object} domain.ErrorResponse
+// @Failure 401 {object} domain.ErrorResponse
+// @Failure 404 {object} domain.ErrorResponse
+// @Failure 500 {object} domain.ErrorResponse
+// @Router /api/v1/admin/users/{id} [delete]
+func (ac *AdminController) Delete(c *gin.Context) {
+	if domain.UserType(c.GetString("x-user-type")) != domain.SuperAdmin {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	userID := strings.TrimSpace(c.Param("id"))
+	if userID == "" {
+		userID = strings.TrimSpace(c.Query("id"))
+	}
+
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "user id is required"})
+		return
+	}
+
+	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid user id"})
+		return
+	}
+
+	err := ac.AdminUsecase.Delete(c, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrCannotDeleteSuperAdmin):
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		case errors.Is(err, domain.ErrUserNotFound):
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "user deleted successfully"})
 }

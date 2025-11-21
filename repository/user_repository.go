@@ -17,8 +17,21 @@ type userRepository struct {
 
 func (ur *userRepository) DeleteUser(c context.Context, id string) error {
 	collection := ur.database.Collection(ur.collection)
-	_, err := collection.DeleteOne(c, bson.M{"_id": id})
-	return err
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	deleted, err := collection.DeleteOne(c, bson.M{"_id": objectID})
+	if err != nil {
+		return err
+	}
+
+	if deleted == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (ur *userRepository) GetByPhone(c context.Context, phone string) (domain.User, error) {

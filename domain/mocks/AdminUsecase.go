@@ -14,6 +14,24 @@ type AdminUsecase struct {
 	mock.Mock
 }
 
+// Delete provides a mock function with given fields: c, userID
+func (_m *AdminUsecase) Delete(c context.Context, userID string) error {
+	ret := _m.Called(c, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(c, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Fetch provides a mock function with given fields: c, pagination
 func (_m *AdminUsecase) Fetch(c context.Context, pagination domain.PaginationQuery) ([]domain.User, int64, error) {
 

@@ -429,6 +429,43 @@ paths:
       summary: List users
       tags:
       - Users
+  /api/v1/admin/users/{id}:
+    delete:
+      description: Delete a user by identifier; super admin accounts cannot be removed.
+      parameters:
+      - description: User identifier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
   /api/v1/admin/users/{id}/status:
     put:
       consumes:
@@ -914,7 +951,7 @@ paths:
       - Sheets
   /api/v1/sheet/delete:
     put:
-      description: Delete a sheet by identifier.
+      description: Delete a sheet by identifier (super admin or sheet owner).
       parameters:
       - description: Sheet identifier
         in: query
