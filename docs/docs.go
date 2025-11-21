@@ -1524,6 +1524,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "user_name": {
+                    "type": "string"
+                },
+                "user_phone": {
+                    "type": "string"
+                },
                 "votes": {
                     "type": "array",
                     "items": {

@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
+	"github.com/amitshekhariitbhu/go-backend-clean-architecture/internal/validation"
 	"strings"
 	"time"
 )
@@ -22,6 +23,31 @@ func (p pollClientUsecase) SubmitVote(c context.Context, payload domain.PollClie
 		return err
 	}
 
+	sheet, err := p.sheetRepository.GetByID(ctx, poll.SheetID.Hex())
+	if err != nil {
+		return err
+	}
+
+	name := strings.TrimSpace(payload.UserName)
+	phone := strings.TrimSpace(payload.UserPhone)
+
+	if sheet.IsPhoneRequired && (name == "" || phone == "") {
+		return domain.ErrPhoneRequired
+	}
+
+	if phone != "" && !validation.Phone(phone) {
+		return domain.ErrInvalidPhone
+	}
+
+	var submission *domain.PollSubmission
+	if name != "" || phone != "" {
+		submission = &domain.PollSubmission{
+			Name:        name,
+			Phone:       phone,
+			SubmittedAt: time.Now(),
+		}
+	}
+
 	switch poll.PollType {
 	case domain.PollTypeOpinion:
 		inputs := make([]string, 0, len(payload.Inputs))
@@ -34,12 +60,12 @@ func (p pollClientUsecase) SubmitVote(c context.Context, payload domain.PollClie
 		if len(inputs) == 0 {
 			return domain.ErrNoOpinionSubmitted
 		}
-		return p.repository.AppendOpinionResponse(ctx, payload.ID, inputs)
+		return p.repository.AppendOpinionResponse(ctx, payload.ID, inputs, submission)
 	default:
 		if len(payload.Votes) == 0 {
 			return domain.ErrNoVotesSubmitted
 		}
-		return p.repository.SubmitVote(ctx, payload.ID, payload.Votes)
+		return p.repository.SubmitVote(ctx, payload.ID, payload.Votes, submission)
 	}
 }
 

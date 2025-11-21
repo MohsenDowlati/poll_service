@@ -139,7 +139,7 @@ func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 
 }
 
-func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string) error {
+func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string, submission *domain.PollSubmission) error {
 	collection := pr.database.Collection(pr.collection)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -151,12 +151,21 @@ func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, 
 		return domain.ErrNoOpinionSubmitted
 	}
 
-	update := bson.M{
-		"$push": bson.M{
-			"responses": bson.M{
-				"$each": responses,
-			},
+	if submission != nil && submission.SubmittedAt.IsZero() {
+		submission.SubmittedAt = time.Now()
+	}
+
+	pushFields := bson.M{
+		"responses": bson.M{
+			"$each": responses,
 		},
+	}
+	if submission != nil {
+		pushFields["submissions"] = submission
+	}
+
+	update := bson.M{
+		"$push": pushFields,
 		"$inc": bson.M{
 			"participant": 1,
 		},
@@ -169,7 +178,7 @@ func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, 
 	return err
 }
 
-func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int) error {
+func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int, submission *domain.PollSubmission) error {
 	collection := pr.database.Collection(pr.collection)
 
 	idHex, err := primitive.ObjectIDFromHex(id)
@@ -193,11 +202,20 @@ func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int
 
 	updateDoc["participant"] = 1
 
+	if submission != nil && submission.SubmittedAt.IsZero() {
+		submission.SubmittedAt = time.Now()
+	}
+
 	update := bson.M{
 		"$inc": updateDoc,
 		"$set": bson.M{
 			"updatedAt": time.Now(),
 		},
+	}
+	if submission != nil {
+		update["$push"] = bson.M{
+			"submissions": submission,
+		}
 	}
 
 	_, err = collection.UpdateOne(ctx, filter, update)

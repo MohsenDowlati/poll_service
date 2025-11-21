@@ -73,9 +73,16 @@ type Poll struct {
 	Participant int                `bson:"participant"`
 	Votes       []int              `bson:"votes"`
 	Responses   []string           `bson:"responses,omitempty"`
+	Submissions []PollSubmission   `bson:"submissions,omitempty" json:"-"`
 	Description string             `bson:"description"`
 	CreatedAt   time.Time          `bson:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt"`
+}
+
+type PollSubmission struct {
+	Name        string    `bson:"name,omitempty" json:"name,omitempty"`
+	Phone       string    `bson:"phone,omitempty" json:"phone,omitempty"`
+	SubmittedAt time.Time `bson:"submittedAt" json:"submitted_at"`
 }
 
 type PollRepository interface {
@@ -83,8 +90,8 @@ type PollRepository interface {
 	GetPollBySheetID(ctx context.Context, sheetID string, pagination PaginationQuery) ([]Poll, int64, error)
 	GetByID(ctx context.Context, id string) (Poll, error)
 	EditPoll(ctx context.Context, poll *Poll) error
-	SubmitVote(ctx context.Context, id string, votes []int) error
-	AppendOpinionResponse(ctx context.Context, id string, responses []string) error
+	SubmitVote(ctx context.Context, id string, votes []int, submission *PollSubmission) error
+	AppendOpinionResponse(ctx context.Context, id string, responses []string, submission *PollSubmission) error
 	Delete(ctx context.Context, id string) error
 	DeleteBySheetID(ctx context.Context, sheetID string) error
 }

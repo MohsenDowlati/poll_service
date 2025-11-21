@@ -35,8 +35,13 @@ func (pcc *PollClientController) Submit(c *gin.Context) {
 	err = pcc.PollClientUsecse.SubmitVote(c, req)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, domain.ErrNoVotesSubmitted) || errors.Is(err, domain.ErrNoOpinionSubmitted) {
+		if errors.Is(err, domain.ErrNoVotesSubmitted) ||
+			errors.Is(err, domain.ErrNoOpinionSubmitted) ||
+			errors.Is(err, domain.ErrPhoneRequired) ||
+			errors.Is(err, domain.ErrInvalidPhone) {
 			status = http.StatusBadRequest
+		} else if errors.Is(err, mongo.ErrNoDocuments) {
+			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
 		return

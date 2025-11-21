@@ -145,6 +145,10 @@ definitions:
         items:
           type: string
         type: array
+      user_name:
+        type: string
+      user_phone:
+        type: string
       votes:
         items:
           type: integer

@@ -153,17 +153,17 @@ func (_m *PollRepository) GetPollBySheetID(ctx context.Context, sheetID string, 
 	return r0, r1, r2
 }
 
-// AppendOpinionResponse provides a mock function with given fields: ctx, id, responses
-func (_m *PollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string) error {
-	ret := _m.Called(ctx, id, responses)
+// AppendOpinionResponse provides a mock function with given fields: ctx, id, responses, submission
+func (_m *PollRepository) AppendOpinionResponse(ctx context.Context, id string, responses []string, submission *domain.PollSubmission) error {
+	ret := _m.Called(ctx, id, responses, submission)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AppendOpinionResponse")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(ctx, id, responses)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, *domain.PollSubmission) error); ok {
+		r0 = rf(ctx, id, responses, submission)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -171,17 +171,17 @@ func (_m *PollRepository) AppendOpinionResponse(ctx context.Context, id string, 
 	return r0
 }
 
-// SubmitVote provides a mock function with given fields: ctx, id, votes
-func (_m *PollRepository) SubmitVote(ctx context.Context, id string, votes []int) error {
-	ret := _m.Called(ctx, id, votes)
+// SubmitVote provides a mock function with given fields: ctx, id, votes, submission
+func (_m *PollRepository) SubmitVote(ctx context.Context, id string, votes []int, submission *domain.PollSubmission) error {
+	ret := _m.Called(ctx, id, votes, submission)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SubmitVote")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []int) error); ok {
-		r0 = rf(ctx, id, votes)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []int, *domain.PollSubmission) error); ok {
+		r0 = rf(ctx, id, votes, submission)
 	} else {
 		r0 = ret.Error(0)
 	}

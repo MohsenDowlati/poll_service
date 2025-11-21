@@ -8,12 +8,16 @@ import (
 var (
 	ErrNoVotesSubmitted   = errors.New("no votes submitted")
 	ErrNoOpinionSubmitted = errors.New("no opinion submitted")
+	ErrPhoneRequired      = errors.New("phone number and name are required for this sheet")
+	ErrInvalidPhone       = errors.New("invalid phone number")
 )
 
 type PollClientRequest struct {
-	ID     string   `json:"id" form:"id"`
-	Votes  []int    `json:"votes" form:"votes"`
-	Inputs []string `json:"inputs" form:"inputs"`
+	ID        string   `json:"id" form:"id"`
+	Votes     []int    `json:"votes" form:"votes"`
+	Inputs    []string `json:"inputs" form:"inputs"`
+	UserName  string   `json:"user_name" form:"user_name"`
+	UserPhone string   `json:"user_phone" form:"user_phone"`
 }
 
 type PollClientResponse struct {
