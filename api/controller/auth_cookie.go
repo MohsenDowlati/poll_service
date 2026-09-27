@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"strings"
 
@@ -31,6 +33,17 @@ func setAuthCookies(c *gin.Context, env *bootstrap.Env, accessToken string, refr
 	if refreshToken != "" {
 		c.SetCookie(domain.RefreshTokenCookieName, refreshToken, hoursToSeconds(env.RefreshTokenExpiryHour), "/", domainName, secure, true)
 	}
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err == nil {
+		c.SetCookie(domain.CSRFTokenCookieName, hex.EncodeToString(tokenBytes), hoursToSeconds(env.RefreshTokenExpiryHour), "/", domainName, secure, false)
+	}
+}
+
+func setSessionRoleCookie(c *gin.Context, env *bootstrap.Env, role domain.UserType) {
+	sameSite := resolveSameSite(env.CookieSameSite)
+	c.SetSameSite(sameSite)
+	secure := env.CookieSecure || sameSite == http.SameSiteNoneMode
+	c.SetCookie(domain.SessionRoleCookieName, string(role), hoursToSeconds(env.AccessTokenExpiryHour), "/", env.CookieDomain, secure, false)
 }
 
 func resolveSameSite(mode string) http.SameSite {

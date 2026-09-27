@@ -26,6 +26,8 @@ type PollAdminResponse struct {
 type PollAdminUsecase interface {
 	CreatePoll(c context.Context, poll *Poll) error
 	GetBySheetID(c context.Context, sheetID string, pagination PaginationQuery) ([]Poll, int64, error)
+	GetByID(c context.Context, id string) (Poll, error)
 	EditPoll(c context.Context, poll *Poll) error
 	Delete(c context.Context, id string) error
+	DeleteBySheetID(c context.Context, sheetID string) error
 }

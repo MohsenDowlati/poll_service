@@ -10,6 +10,10 @@ var (
 	ErrNoOpinionSubmitted = errors.New("no opinion submitted")
 	ErrPhoneRequired      = errors.New("phone number and name are required for this sheet")
 	ErrInvalidPhone       = errors.New("invalid phone number")
+	ErrPollNotPublished   = errors.New("poll is not available")
+	ErrPollFinished       = errors.New("poll is finished")
+	ErrInvalidVote        = errors.New("invalid vote payload")
+	ErrDuplicateSubmission = errors.New("participant has already submitted")
 )
 
 type PollClientRequest struct {
@@ -18,6 +22,7 @@ type PollClientRequest struct {
 	Inputs    []string `json:"inputs" form:"inputs"`
 	UserName  string   `json:"user_name" form:"user_name"`
 	UserPhone string   `json:"user_phone" form:"user_phone"`
+	ParticipantKey string `json:"-" form:"-"`
 }
 
 type PollClientResponse struct {

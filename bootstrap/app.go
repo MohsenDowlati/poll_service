@@ -8,8 +8,11 @@ type Application struct {
 }
 
 func App() Application {
-	app := &Application{}
-	app.Env = NewEnv()
+	return AppWithEnv(NewEnv())
+}
+
+func AppWithEnv(env *Env) Application {
+	app := &Application{Env: env}
 	app.Mongo = NewMongoDatabase(app.Env)
 	return *app
 }

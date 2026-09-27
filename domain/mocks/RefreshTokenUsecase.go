@@ -70,12 +70,12 @@ func (_m *RefreshTokenUsecase) CreateRefreshToken(user *domain.User, secret stri
 	return r0, r1
 }
 
-// ExtractIDFromToken provides a mock function with given fields: requestToken, secret
-func (_m *RefreshTokenUsecase) ExtractIDFromToken(requestToken string, secret string) (string, error) {
+// ExtractIDFromRefreshToken provides a mock function with given fields: requestToken, secret
+func (_m *RefreshTokenUsecase) ExtractIDFromRefreshToken(requestToken string, secret string) (string, error) {
 	ret := _m.Called(requestToken, secret)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ExtractIDFromToken")
+		panic("no return value specified for ExtractIDFromRefreshToken")
 	}
 
 	var r0 string

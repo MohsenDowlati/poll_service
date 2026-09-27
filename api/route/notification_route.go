@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/api/controller"
+	"github.com/amitshekhariitbhu/go-backend-clean-architecture/api/middleware"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/mongo"
@@ -21,7 +22,9 @@ func NewNotificationRouter(env *bootstrap.Env, timeout time.Duration, db mongo.D
 		NotificationUsecase: usecase.NewNotificationUsecase(nr, ur, sr, timeout),
 	}
 
-	group.GET("/poll/notifications", nc.FetchPending)
-	group.POST("/poll/notifications/:id/approve", nc.Approve)
-	group.POST("/poll/notifications/:id/reject", nc.Reject)
+	adminGroup := group.Group("")
+	adminGroup.Use(middleware.RequireRoles(domain.SuperAdmin))
+	adminGroup.GET("/poll/notifications", nc.FetchPending)
+	adminGroup.POST("/poll/notifications/:id/approve", nc.Approve)
+	adminGroup.POST("/poll/notifications/:id/reject", nc.Reject)
 }

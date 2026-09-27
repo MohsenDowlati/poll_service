@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongodriver "go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,9 +43,25 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		return
 	}
 
+	request.Name = strings.TrimSpace(request.Name)
+	request.Phone = strings.TrimSpace(request.Phone)
+	request.Organization = strings.TrimSpace(request.Organization)
+	if request.Name == "" || request.Phone == "" || request.Organization == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "name, phone, and organization are required"})
+		return
+	}
+	if len(request.Password) < 8 {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "password must be at least 8 characters"})
+		return
+	}
+
 	_, err = sc.SignupUsecase.GetUserByPhone(c, request.Phone)
 	if err == nil {
 		c.JSON(http.StatusConflict, domain.ErrorResponse{Message: "User already exists with the given phone"})
+		return
+	}
+	if !errors.Is(err, mongodriver.ErrNoDocuments) {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "unable to check existing account"})
 		return
 	}
 
@@ -80,24 +99,6 @@ func (sc *SignupController) Signup(c *gin.Context) {
 		}
 	}
 
-	accessToken, err := sc.SignupUsecase.CreateAccessToken(&user, sc.Env.AccessTokenSecret, sc.Env.AccessTokenExpiryHour)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	refreshToken, err := sc.SignupUsecase.CreateRefreshToken(&user, sc.Env.RefreshTokenSecret, sc.Env.RefreshTokenExpiryHour)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	setAuthCookies(c, sc.Env, accessToken, refreshToken)
-
-	signupResponse := domain.SignupResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-
-	c.JSON(http.StatusOK, signupResponse)
+	setSessionRoleCookie(c, sc.Env, user.Admin)
+	c.JSON(http.StatusCreated, domain.SignupResponse{})
 }

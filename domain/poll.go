@@ -82,6 +82,7 @@ type Poll struct {
 type PollSubmission struct {
 	Name        string    `bson:"name,omitempty" json:"name,omitempty"`
 	Phone       string    `bson:"phone,omitempty" json:"phone,omitempty"`
+	Key         string    `bson:"key,omitempty" json:"-"`
 	SubmittedAt time.Time `bson:"submittedAt" json:"submitted_at"`
 }
 

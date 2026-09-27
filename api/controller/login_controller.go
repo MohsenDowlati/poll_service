@@ -45,25 +45,32 @@ func (lc *LoginController) Login(c *gin.Context) {
 	case identifier != "":
 		user, err = lc.LoginUsecase.GetUserByPhone(c, identifier)
 		if err != nil {
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "User not found with the given phone"})
+			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "invalid credentials"})
+			return
+		}
+	case strings.TrimSpace(request.Email) != "":
+		identifier = strings.TrimSpace(request.Email)
+		user, err = lc.LoginUsecase.GetUserByEmail(c, identifier)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "invalid credentials"})
 			return
 		}
 	default:
-		identifier = strings.TrimSpace(request.Phone)
-		if identifier == "" {
-			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "Either phone or email is required"})
-			return
-		}
-
-		user, err = lc.LoginUsecase.GetUserByEmail(c, identifier)
-		if err != nil {
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "User not found with the given email"})
-			return
-		}
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "either phone or email is required"})
+		return
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)) != nil {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "Invalid credentials"})
+		return
+	}
+
+	if !user.IsVerified && user.Admin != domain.SuperAdmin {
+		c.JSON(http.StatusForbidden, domain.ErrorResponse{Message: "account is pending approval"})
+		return
+	}
+	if user.Admin == domain.CanceledUser {
+		c.JSON(http.StatusForbidden, domain.ErrorResponse{Message: "account is disabled"})
 		return
 	}
 
@@ -80,6 +87,7 @@ func (lc *LoginController) Login(c *gin.Context) {
 	}
 
 	setAuthCookies(c, lc.Env, accessToken, refreshToken)
+	setSessionRoleCookie(c, lc.Env, user.Admin)
 
 	loginResponse := domain.LoginResponse{
 		AccessToken:  accessToken,

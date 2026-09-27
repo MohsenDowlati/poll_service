@@ -288,7 +288,7 @@ func (sc *SheetController) FetchByID(c *gin.Context) {
 	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, mongo.ErrNoDocuments) || errors.Is(err, domain.ErrSheetNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
@@ -338,7 +338,7 @@ func (sc *SheetController) Export(c *gin.Context) {
 	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, mongo.ErrNoDocuments) || errors.Is(err, domain.ErrSheetNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
@@ -406,7 +406,7 @@ func (sc *SheetController) Delete(c *gin.Context) {
 	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, mongo.ErrNoDocuments) || errors.Is(err, domain.ErrSheetNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
@@ -433,7 +433,7 @@ func (sc *SheetController) Delete(c *gin.Context) {
 	}
 
 	if sc.PollUsecase != nil {
-		if err = sc.PollUsecase.Delete(c, identifier); err != nil {
+		if err = sc.PollUsecase.DeleteBySheetID(c, identifier); err != nil {
 			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 			return
 		}
@@ -482,7 +482,7 @@ func (sc *SheetController) Finish(c *gin.Context) {
 	sheet, err := sc.SheetuseCase.GetByID(c, identifier)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, mongo.ErrNoDocuments) || errors.Is(err, domain.ErrSheetNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, domain.ErrorResponse{Message: err.Error()})

@@ -45,16 +45,8 @@ func (pr *pollRepository) DeleteBySheetID(ctx context.Context, sheetID string) e
 		return err
 	}
 
-	for {
-		deleted, err := collection.DeleteOne(ctx, bson.M{"sheetID": hexID})
-		if err != nil {
-			return err
-		}
-
-		if deleted == 0 {
-			return nil
-		}
-	}
+	_, err = collection.DeleteMany(ctx, bson.M{"sheetID": hexID})
+	return err
 }
 
 func (pr *pollRepository) Create(ctx context.Context, poll *domain.Poll) error {
@@ -97,6 +89,7 @@ func (pr *pollRepository) GetPollBySheetID(ctx context.Context, sheetID string, 
 	if err != nil {
 		return nil, 0, err
 	}
+	defer cursor.Close(ctx)
 
 	var polls []domain.Poll
 	if err = cursor.All(ctx, &polls); err != nil {
@@ -129,10 +122,12 @@ func (pr *pollRepository) EditPoll(ctx context.Context, poll *domain.Poll) error
 			"updatedAt":   time.Now(),
 		},
 	}
-
-	_, err := collection.UpdateOne(ctx, filter, update)
+	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to update poll: %v", err)
+	}
+	if result == nil || result.MatchedCount == 0 {
+		return domain.ErrPollNotFound
 	}
 
 	return nil
@@ -174,8 +169,26 @@ func (pr *pollRepository) AppendOpinionResponse(ctx context.Context, id string, 
 		},
 	}
 
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
-	return err
+	filter := bson.M{"_id": objectID}
+	if submission != nil && submission.Key != "" {
+		filter["submissions.key"] = bson.M{"$ne": submission.Key}
+	}
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		var existing domain.Poll
+		findErr := collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&existing)
+		if findErr != nil {
+			return findErr
+		}
+		if submission != nil && submission.Key != "" {
+			return domain.ErrDuplicateSubmission
+		}
+		return domain.ErrPollNotFound
+	}
+	return nil
 }
 
 func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int, submission *domain.PollSubmission) error {
@@ -218,9 +231,23 @@ func (pr *pollRepository) SubmitVote(ctx context.Context, id string, votes []int
 		}
 	}
 
-	_, err = collection.UpdateOne(ctx, filter, update)
+	if submission != nil && submission.Key != "" {
+		filter["submissions.key"] = bson.M{"$ne": submission.Key}
+	}
+	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		var existing domain.Poll
+		findErr := collection.FindOne(ctx, bson.M{"_id": idHex}).Decode(&existing)
+		if findErr != nil {
+			return findErr
+		}
+		if submission != nil && submission.Key != "" {
+			return domain.ErrDuplicateSubmission
+		}
+		return domain.ErrPollNotFound
 	}
 
 	return nil

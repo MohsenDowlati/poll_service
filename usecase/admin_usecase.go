@@ -39,6 +39,14 @@ func (au *adminUsecase) VerifyUser(c context.Context, userID string, isVerified 
 	ctx, cancel := context.WithTimeout(c, au.contextTimeout)
 	defer cancel()
 
+	user, err := au.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.Admin == domain.SuperAdmin {
+		return domain.ErrCannotModifySuperAdmin
+	}
+
 	adminRole := domain.VerifiedAdmin
 	if !isVerified {
 		adminRole = domain.CanceledUser

@@ -99,6 +99,10 @@ func (ac *AdminController) UpdateStatus(c *gin.Context) {
 	}
 
 	if err := ac.AdminUsecase.VerifyUser(c, bodyID, *payload.IsVerified); err != nil {
+		if errors.Is(err, domain.ErrCannotModifySuperAdmin) {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
 		return
 	}

@@ -1,15 +1,19 @@
 package controller
 
 import (
+	"errors"
+	"strings"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongodriver "go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"time"
 )
 
 type PollAdminController struct {
 	PollAdminUsecase domain.PollAdminUsecase
+	SheetUsecase     domain.SheetUseCase
 }
 
 // Create adds a new poll for the given sheet.
@@ -44,6 +48,18 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "at least one category is required"})
 		return
 	}
+	pollType, err := domain.ParsePollType(strings.ToLower(strings.TrimSpace(string(req.PollType))))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid poll type"})
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	req.Description = strings.TrimSpace(req.Description)
+	req.Options = normalizeOptions(req.Options)
+	if req.Title == "" || len(req.Options) < pollType.MinOptions() {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid poll title or options"})
+		return
+	}
 
 	hexSheetID, err := primitive.ObjectIDFromHex(req.SheetID)
 
@@ -51,11 +67,15 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "Invalid sheet ID"})
 		return
 	}
+	if err := pc.authorizeSheet(c, hexSheetID.Hex()); err != nil {
+		pc.writeAuthorizationError(c, err)
+		return
+	}
 
 	var poll domain.Poll
 
-	votes := make([]int, req.PollType.VoteSlots(len(req.Options)))
-	if req.PollType == domain.PollTypeOpinion {
+	votes := make([]int, pollType.VoteSlots(len(req.Options)))
+	if pollType == domain.PollTypeOpinion {
 		votes = nil
 	}
 
@@ -64,7 +84,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		SheetID:     hexSheetID,
 		Title:       req.Title,
 		Options:     req.Options,
-		PollType:    req.PollType,
+		PollType:    pollType,
 		Category:    categories,
 		Participant: 0,
 		Votes:       votes,
@@ -73,7 +93,7 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 		UpdatedAt:   time.Now(),
 	}
 
-	if req.PollType == domain.PollTypeOpinion {
+	if pollType == domain.PollTypeOpinion {
 		poll.Responses = []string{}
 	}
 
@@ -107,6 +127,13 @@ func (pc *PollAdminController) Create(c *gin.Context) {
 // @Router /api/v1/edit [post]
 func (pc *PollAdminController) Edit(c *gin.Context) {
 	id := c.Param("id")
+	if id == "" {
+		id = c.Query("id")
+	}
+	if strings.TrimSpace(id) == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "poll id is required"})
+		return
+	}
 
 	var req domain.PollAdminRequest
 
@@ -119,6 +146,18 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 	categories := normalizeCategories(req.Category)
 	if len(categories) == 0 {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "at least one category is required"})
+		return
+	}
+	pollType, err := domain.ParsePollType(strings.ToLower(strings.TrimSpace(string(req.PollType))))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid poll type"})
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	req.Description = strings.TrimSpace(req.Description)
+	req.Options = normalizeOptions(req.Options)
+	if req.Title == "" || len(req.Options) < pollType.MinOptions() {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "invalid poll title or options"})
 		return
 	}
 
@@ -135,11 +174,28 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "Invalid ID"})
 		return
 	}
+	existing, err := pc.PollAdminUsecase.GetByID(c, id)
+	if err != nil {
+		if errors.Is(err, mongodriver.ErrNoDocuments) || errors.Is(err, domain.ErrPollNotFound) {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "poll not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "failed to load poll"})
+		}
+		return
+	}
+	if err := pc.authorizeSheet(c, existing.SheetID.Hex()); err != nil {
+		pc.writeAuthorizationError(c, err)
+		return
+	}
+	if existing.SheetID != hexSheetID {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "poll sheet cannot be changed"})
+		return
+	}
 
 	var poll domain.Poll
 
-	votes := make([]int, req.PollType.VoteSlots(len(req.Options)))
-	if req.PollType == domain.PollTypeOpinion {
+	votes := make([]int, pollType.VoteSlots(len(req.Options)))
+	if pollType == domain.PollTypeOpinion {
 		votes = nil
 	}
 
@@ -148,7 +204,7 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		SheetID:     hexSheetID,
 		Title:       req.Title,
 		Options:     req.Options,
-		PollType:    req.PollType,
+		PollType:    pollType,
 		Category:    categories,
 		Participant: 0,
 		Votes:       votes,
@@ -156,13 +212,14 @@ func (pc *PollAdminController) Edit(c *gin.Context) {
 		UpdatedAt:   time.Now(),
 	}
 
-	if req.PollType == domain.PollTypeOpinion {
+	if pollType == domain.PollTypeOpinion {
 		poll.Responses = []string{}
 	}
 
 	err = pc.PollAdminUsecase.EditPoll(c, &poll)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "poll updated successfully"})
@@ -189,6 +246,10 @@ func (pc *PollAdminController) GetBySheetID(c *gin.Context) {
 
 	if id == "" {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "sheet id is required"})
+		return
+	}
+	if err := pc.authorizeSheet(c, id); err != nil {
+		pc.writeAuthorizationError(c, err)
 		return
 	}
 
@@ -254,14 +315,79 @@ func (pc *PollAdminController) Delete(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "id is required"})
 		return
 	}
+	poll, err := pc.PollAdminUsecase.GetByID(c, id)
+	if err != nil {
+		if errors.Is(err, mongodriver.ErrNoDocuments) || errors.Is(err, domain.ErrPollNotFound) {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "poll not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "failed to load poll"})
+		}
+		return
+	}
+	if err := pc.authorizeSheet(c, poll.SheetID.Hex()); err != nil {
+		pc.writeAuthorizationError(c, err)
+		return
+	}
 
-	err := pc.PollAdminUsecase.Delete(c, id)
+	err = pc.PollAdminUsecase.Delete(c, id)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrPollNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, domain.SuccessResponse{Message: "poll deleted successfully"})
 
+}
+
+func (pc *PollAdminController) authorizeSheet(c *gin.Context, sheetID string) error {
+	if domain.UserType(c.GetString("x-user-type")) == domain.SuperAdmin {
+		return nil
+	}
+	if pc.SheetUsecase == nil {
+		return errors.New("sheet authorization unavailable")
+	}
+	sheet, err := pc.SheetUsecase.GetByID(c, sheetID)
+	if err != nil {
+		return err
+	}
+	if sheet.UserID.Hex() != c.GetString("x-user-id") {
+		return errForbidden
+	}
+	return nil
+}
+
+var errForbidden = errors.New("forbidden")
+
+func (pc *PollAdminController) writeAuthorizationError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, errForbidden):
+		c.JSON(http.StatusForbidden, domain.ErrorResponse{Message: "forbidden"})
+	case errors.Is(err, mongodriver.ErrNoDocuments), errors.Is(err, domain.ErrSheetNotFound):
+		c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "sheet not found"})
+	default:
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "failed to authorize sheet"})
+	}
+}
+
+func normalizeOptions(values []string) []string {
+	options := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		options = append(options, value)
+	}
+	return options
 }

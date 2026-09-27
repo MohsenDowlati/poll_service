@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"strings"
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,9 +29,26 @@ type PollClientController struct {
 func (pcc *PollClientController) Submit(c *gin.Context) {
 	var req domain.PollClientRequest
 
-	err := c.BindJSON(&req)
+	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: err.Error()})
+		return
+	}
+	participantKey, cookieErr := c.Cookie("participant_id")
+	if cookieErr != nil || participantKey == "" {
+		buf := make([]byte, 24)
+		if _, randErr := rand.Read(buf); randErr == nil {
+			participantKey = hex.EncodeToString(buf)
+			c.SetSameSite(http.SameSiteLaxMode)
+			// The participant key is an opaque anti-duplicate identifier; it is not
+			// needed by browser JavaScript and should not be exposed to XSS.
+			c.SetCookie("participant_id", participantKey, 365*24*60*60, "/", "", c.Request.TLS != nil, true)
+		}
+	}
+	req.ParticipantKey = participantKey
+	req.ID = strings.TrimSpace(req.ID)
+	if req.ID == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "poll id is required"})
 		return
 	}
 
@@ -38,12 +58,21 @@ func (pcc *PollClientController) Submit(c *gin.Context) {
 		if errors.Is(err, domain.ErrNoVotesSubmitted) ||
 			errors.Is(err, domain.ErrNoOpinionSubmitted) ||
 			errors.Is(err, domain.ErrPhoneRequired) ||
-			errors.Is(err, domain.ErrInvalidPhone) {
+			errors.Is(err, domain.ErrInvalidPhone) ||
+			errors.Is(err, domain.ErrInvalidVote) {
 			status = http.StatusBadRequest
+		} else if errors.Is(err, domain.ErrDuplicateSubmission) {
+			status = http.StatusConflict
+		} else if errors.Is(err, domain.ErrPollNotPublished) || errors.Is(err, domain.ErrPollFinished) {
+			status = http.StatusForbidden
 		} else if errors.Is(err, mongo.ErrNoDocuments) {
 			status = http.StatusNotFound
 		}
-		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		message := err.Error()
+		if status >= 500 {
+			message = "unable to submit vote"
+		}
+		c.JSON(status, domain.ErrorResponse{Message: message})
 		return
 	}
 
@@ -73,14 +102,9 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: "sheet id is required"})
 		return
 	}
+	id = strings.TrimSpace(id)
 
 	pagination := extractPagination(c)
-
-	polls, total, err := pcc.PollClientUsecse.GetBySheetID(c, id, pagination)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: err.Error()})
-		return
-	}
 
 	sheet, err := pcc.PollClientUsecse.GetSheet(c, id)
 	if err != nil {
@@ -88,16 +112,26 @@ func (pcc *PollClientController) Fetch(c *gin.Context) {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			status = http.StatusNotFound
 		}
-		c.JSON(status, domain.ErrorResponse{Message: err.Error()})
+		message := "unable to load sheet"
+		if status == http.StatusNotFound {
+			message = "sheet not found"
+		}
+		c.JSON(status, domain.ErrorResponse{Message: message})
 		return
 	}
 
 	if sheet.Status != domain.SheetStatusPublished {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "sheet is not published"})
+		c.JSON(http.StatusNotFound, domain.ErrorResponse{Message: "sheet not found"})
 		return
 	}
 
-	var result []domain.PollClientResponse
+	polls, total, err := pcc.PollClientUsecse.GetBySheetID(c, id, pagination)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Message: "unable to retrieve polls"})
+		return
+	}
+
+	result := make([]domain.PollClientResponse, 0, len(polls))
 
 	for _, poll := range polls {
 		result = append(result, domain.PollClientResponse{

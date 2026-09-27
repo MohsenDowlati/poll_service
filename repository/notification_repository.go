@@ -45,6 +45,7 @@ func (nr *notificationRepository) FetchPending(ctx context.Context, pagination d
 	if err != nil {
 		return nil, 0, err
 	}
+	defer cursor.Close(ctx)
 
 	var notifications []domain.Notification
 	if err = cursor.All(ctx, &notifications); err != nil {
@@ -91,8 +92,14 @@ func (nr *notificationRepository) UpdateStatus(ctx context.Context, id string, s
 		},
 	}
 
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
-	return err
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	if err != nil {
+		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		return domain.ErrNotificationNotFound
+	}
+	return nil
 }
 
 func (nr *notificationRepository) Delete(ctx context.Context, id string) error {
@@ -103,6 +110,12 @@ func (nr *notificationRepository) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	_, err = collection.DeleteOne(ctx, bson.M{"_id": objectID})
-	return err
+	deleted, err := collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	if err != nil {
+		return err
+	}
+	if deleted == 0 {
+		return domain.ErrNotificationNotFound
+	}
+	return nil
 }

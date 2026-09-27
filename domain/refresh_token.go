@@ -5,7 +5,7 @@ import (
 )
 
 type RefreshTokenRequest struct {
-	RefreshToken string `form:"refreshToken" binding:"required"`
+	RefreshToken string `form:"refreshToken" json:"refreshToken"`
 }
 
 type RefreshTokenResponse struct {
@@ -17,5 +17,5 @@ type RefreshTokenUsecase interface {
 	GetUserByID(c context.Context, id string) (User, error)
 	CreateAccessToken(user *User, secret string, expiry int) (accessToken string, err error)
 	CreateRefreshToken(user *User, secret string, expiry int) (refreshToken string, err error)
-	ExtractIDFromToken(requestToken string, secret string) (string, error)
+	ExtractIDFromRefreshToken(requestToken string, secret string) (string, error)
 }

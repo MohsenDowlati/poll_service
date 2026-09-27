@@ -20,10 +20,10 @@ func NewRefreshTokenUsecase(userRepository domain.UserRepository, timeout time.D
 	}
 }
 
-func (rtu *refreshTokenUsecase) GetUserByID(c context.Context, email string) (domain.User, error) {
+func (rtu *refreshTokenUsecase) GetUserByID(c context.Context, id string) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(c, rtu.contextTimeout)
 	defer cancel()
-	return rtu.userRepository.GetByID(ctx, email)
+	return rtu.userRepository.GetByID(ctx, id)
 }
 
 func (rtu *refreshTokenUsecase) CreateAccessToken(user *domain.User, secret string, expiry int) (accessToken string, err error) {
@@ -34,6 +34,6 @@ func (rtu *refreshTokenUsecase) CreateRefreshToken(user *domain.User, secret str
 	return tokenutil.CreateRefreshToken(user, secret, expiry)
 }
 
-func (rtu *refreshTokenUsecase) ExtractIDFromToken(requestToken string, secret string) (string, error) {
-	return tokenutil.ExtractIDFromToken(requestToken, secret)
+func (rtu *refreshTokenUsecase) ExtractIDFromRefreshToken(requestToken string, secret string) (string, error) {
+	return tokenutil.ExtractIDFromRefreshToken(requestToken, secret)
 }

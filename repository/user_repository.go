@@ -53,8 +53,14 @@ func (ur *userRepository) VerifyUser(c context.Context, id string) error {
 	filter := bson.M{"_id": idHex}
 	update := bson.M{"$set": bson.M{"isVerified": true}}
 
-	_, err = collection.UpdateOne(c, filter, update, options.Update().SetUpsert(true))
-	return err
+	result, err := collection.UpdateOne(c, filter, update)
+	if err != nil {
+		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
 }
 
 func NewUserRepository(db mongo.Database, collection string) domain.UserRepository {
@@ -87,6 +93,7 @@ func (ur *userRepository) Fetch(c context.Context, pagination domain.PaginationQ
 	if err != nil {
 		return nil, 0, err
 	}
+	defer cursor.Close(c)
 
 	var users []domain.User
 	if err = cursor.All(c, &users); err != nil {
@@ -139,6 +146,12 @@ func (ur *userRepository) UpdateAdminStatus(c context.Context, id string, admin 
 		},
 	}
 
-	_, err = collection.UpdateOne(c, bson.M{"_id": objectID}, update)
-	return err
+	result, err := collection.UpdateOne(c, bson.M{"_id": objectID}, update)
+	if err != nil {
+		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
 }

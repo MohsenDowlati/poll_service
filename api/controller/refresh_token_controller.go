@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/amitshekhariitbhu/go-backend-clean-architecture/bootstrap"
@@ -29,7 +31,7 @@ func (rtc *RefreshTokenController) RefreshToken(c *gin.Context) {
 	if err != nil || refreshToken == "" {
 		var request domain.RefreshTokenRequest
 
-		if bindErr := c.ShouldBind(&request); bindErr != nil {
+		if bindErr := c.ShouldBind(&request); bindErr != nil && !errors.Is(bindErr, io.EOF) {
 			c.JSON(http.StatusBadRequest, domain.ErrorResponse{Message: bindErr.Error()})
 			return
 		}
@@ -37,11 +39,11 @@ func (rtc *RefreshTokenController) RefreshToken(c *gin.Context) {
 	}
 
 	if refreshToken == "" {
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "User not found"})
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "refresh token is required"})
 		return
 	}
 
-	id, err := rtc.RefreshTokenUsecase.ExtractIDFromToken(refreshToken, rtc.Env.RefreshTokenSecret)
+	id, err := rtc.RefreshTokenUsecase.ExtractIDFromRefreshToken(refreshToken, rtc.Env.RefreshTokenSecret)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "User not found"})
 		return
@@ -50,6 +52,10 @@ func (rtc *RefreshTokenController) RefreshToken(c *gin.Context) {
 	user, err := rtc.RefreshTokenUsecase.GetUserByID(c, id)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "User not found"})
+		return
+	}
+	if user.Admin == domain.CanceledUser || (!user.IsVerified && user.Admin != domain.SuperAdmin) {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "session is no longer valid"})
 		return
 	}
 
@@ -66,6 +72,7 @@ func (rtc *RefreshTokenController) RefreshToken(c *gin.Context) {
 	}
 
 	setAuthCookies(c, rtc.Env, newAccessToken, newRefreshToken)
+	setSessionRoleCookie(c, rtc.Env, user.Admin)
 
 	refreshTokenResponse := domain.RefreshTokenResponse{
 		AccessToken:  newAccessToken,

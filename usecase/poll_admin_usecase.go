@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"context"
-	"errors"
-	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 	"time"
+
+	"github.com/amitshekhariitbhu/go-backend-clean-architecture/domain"
 )
 
 type pollAdminUsecase struct {
@@ -16,13 +16,13 @@ func (p pollAdminUsecase) Delete(c context.Context, id string) error {
 	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
 	defer cancel()
 
-	err := p.repository.Delete(ctx, id)
+	return p.repository.Delete(ctx, id)
+}
 
-	if errors.Is(err, domain.ErrPollNotFound) {
-		return p.repository.DeleteBySheetID(ctx, id)
-	}
-
-	return err
+func (p pollAdminUsecase) DeleteBySheetID(c context.Context, sheetID string) error {
+	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
+	defer cancel()
+	return p.repository.DeleteBySheetID(ctx, sheetID)
 }
 
 func (p pollAdminUsecase) CreatePoll(c context.Context, poll *domain.Poll) error {
@@ -39,6 +39,12 @@ func (p pollAdminUsecase) GetBySheetID(c context.Context, sheetID string, pagina
 	defer cancel()
 
 	return p.repository.GetPollBySheetID(ctx, sheetID, pagination)
+}
+
+func (p pollAdminUsecase) GetByID(c context.Context, id string) (domain.Poll, error) {
+	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
+	defer cancel()
+	return p.repository.GetByID(ctx, id)
 }
 
 func (p pollAdminUsecase) EditPoll(c context.Context, poll *domain.Poll) error {

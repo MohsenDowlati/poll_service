@@ -19,26 +19,24 @@ func JwtAuthMiddleware(secret string) gin.HandlerFunc {
 		}
 
 		authorized, err := tokenutil.IsAuthorized(authToken, secret)
-		if authorized {
-			userID, err := tokenutil.ExtractIDFromToken(authToken, secret)
-			if err != nil {
-				c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: err.Error()})
-				c.Abort()
-				return
-			}
-			c.Set("x-user-id", userID)
-			userType, err := tokenutil.ExtractRoleFromToken(authToken, secret)
-			if err != nil {
-				c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: err.Error()})
-				c.Abort()
-				return
-			}
-			c.Set("x-user-type", userType)
-			c.Next()
+		if !authorized || err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "not authorized"})
 			return
 		}
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Message: err.Error()})
-		c.Abort()
+
+		userID, err := tokenutil.ExtractIDFromToken(authToken, secret)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "not authorized"})
+			return
+		}
+		userType, err := tokenutil.ExtractRoleFromToken(authToken, secret)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Message: "not authorized"})
+			return
+		}
+		c.Set("x-user-id", userID)
+		c.Set("x-user-type", userType)
+		c.Next()
 	}
 }
 

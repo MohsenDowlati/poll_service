@@ -2,12 +2,15 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const CollectionSheet = "sheets"
+
+var ErrSheetNotFound = errors.New("sheet not found")
 
 type SheetStatus string
 

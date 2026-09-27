@@ -37,6 +37,43 @@ type Env struct {
 	SuperAdminOrganization string
 }
 
+func (e *Env) Validate() error {
+	if e == nil {
+		return errors.New("environment is required")
+	}
+	if strings.TrimSpace(e.AccessTokenSecret) == "" || len(e.AccessTokenSecret) < 32 {
+		return errors.New("ACCESS_TOKEN_SECRET must be at least 32 characters")
+	}
+	if strings.TrimSpace(e.RefreshTokenSecret) == "" || len(e.RefreshTokenSecret) < 32 {
+		return errors.New("REFRESH_TOKEN_SECRET must be at least 32 characters")
+	}
+	if strings.EqualFold(strings.TrimSpace(e.AppEnv), "production") {
+		if strings.Contains(strings.ToLower(e.AccessTokenSecret), "replace-with") ||
+			strings.Contains(strings.ToLower(e.RefreshTokenSecret), "replace-with") {
+			return errors.New("token secrets must be replaced in production")
+		}
+		if strings.EqualFold(strings.TrimSpace(e.SuperAdminPassword), "ChangeMe123!") {
+			return errors.New("SUPER_ADMIN_PASSWORD must be changed in production")
+		}
+	}
+	if e.ContextTimeout <= 0 {
+		return errors.New("CONTEXT_TIMEOUT must be positive")
+	}
+	if e.AccessTokenExpiryHour <= 0 || e.RefreshTokenExpiryHour <= 0 {
+		return errors.New("token expiry values must be positive")
+	}
+	if strings.TrimSpace(e.DBName) == "" {
+		return errors.New("DB_NAME is required")
+	}
+	if strings.EqualFold(strings.TrimSpace(e.AppEnv), "production") && strings.TrimSpace(e.CORSAllowedOrigins) == "" {
+		return errors.New("CORS_ALLOWED_ORIGINS is required in production")
+	}
+	if strings.EqualFold(strings.TrimSpace(e.AppEnv), "production") && !e.CookieSecure {
+		return errors.New("COOKIE_SECURE must be true in production")
+	}
+	return nil
+}
+
 func NewEnv() *Env {
 	loadLocalEnv()
 

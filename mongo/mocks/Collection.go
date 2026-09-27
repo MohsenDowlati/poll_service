@@ -111,6 +111,30 @@ func (_m *Collection) DeleteOne(_a0 context.Context, _a1 interface{}) (int64, er
 	return r0, r1
 }
 
+// DeleteMany provides a mock function with given fields: _a0, _a1
+func (_m *Collection) DeleteMany(_a0 context.Context, _a1 interface{}) (int64, error) {
+	ret := _m.Called(_a0, _a1)
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteMany")
+	}
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) (int64, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) int64); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if rf, ok := ret.Get(1).(func(context.Context, interface{}) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
 // Find provides a mock function with given fields: _a0, _a1, _a2
 func (_m *Collection) Find(_a0 context.Context, _a1 interface{}, _a2 ...*options.FindOptions) (mongo.Cursor, error) {
 	_va := make([]interface{}, len(_a2))

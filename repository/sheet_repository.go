@@ -39,6 +39,7 @@ func (sr *sheetRepository) GetByUserID(ctx context.Context, userID string, pagin
 	if err != nil {
 		return nil, 0, err
 	}
+	defer cursor.Close(ctx)
 
 	var result []domain.Sheet
 	if err = cursor.All(ctx, &result); err != nil {
@@ -97,6 +98,7 @@ func (sr *sheetRepository) GetAll(ctx context.Context, pagination domain.Paginat
 	if err != nil {
 		return nil, 0, err
 	}
+	defer cursor.Close(ctx)
 
 	var sheets []domain.Sheet
 	if err = cursor.All(ctx, &sheets); err != nil {
@@ -121,8 +123,14 @@ func (sr *sheetRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	_, err = collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: idHex}})
-	return err
+	deleted, err := collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: idHex}})
+	if err != nil {
+		return err
+	}
+	if deleted == 0 {
+		return domain.ErrSheetNotFound
+	}
+	return nil
 }
 
 func (sr *sheetRepository) UpdateStatus(ctx context.Context, id string, status domain.SheetStatus, approvedBy primitive.ObjectID, approvedAt time.Time) error {
@@ -142,8 +150,14 @@ func (sr *sheetRepository) UpdateStatus(ctx context.Context, id string, status d
 		},
 	}
 
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
-	return err
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	if err != nil {
+		return err
+	}
+	if result == nil || result.MatchedCount == 0 {
+		return domain.ErrSheetNotFound
+	}
+	return nil
 }
 
 func applySheetFilters(criteria bson.M, filter domain.SheetListFilter) {

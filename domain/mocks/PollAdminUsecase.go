@@ -14,6 +14,30 @@ type PollAdminUsecase struct {
 	mock.Mock
 }
 
+// GetByID provides a mock function with given fields: c, id
+func (_m *PollAdminUsecase) GetByID(c context.Context, id string) (domain.Poll, error) {
+	ret := _m.Called(c, id)
+	if len(ret) == 0 {
+		panic("no return value specified for GetByID")
+	}
+	var r0 domain.Poll
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (domain.Poll, error)); ok {
+		return rf(c, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) domain.Poll); ok {
+		r0 = rf(c, id)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(domain.Poll)
+	}
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
 // CreatePoll provides a mock function with given fields: c, poll
 func (_m *PollAdminUsecase) CreatePoll(c context.Context, poll *domain.Poll) error {
 	ret := _m.Called(c, poll)
@@ -48,6 +72,18 @@ func (_m *PollAdminUsecase) Delete(c context.Context, id string) error {
 	}
 
 	return r0
+}
+
+// DeleteBySheetID provides a mock function with given fields: c, sheetID
+func (_m *PollAdminUsecase) DeleteBySheetID(c context.Context, sheetID string) error {
+	ret := _m.Called(c, sheetID)
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteBySheetID")
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		return rf(c, sheetID)
+	}
+	return ret.Error(0)
 }
 
 // EditPoll provides a mock function with given fields: c, poll
