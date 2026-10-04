@@ -81,23 +81,23 @@ func NewEnv() *Env {
 		AppEnv:                 getEnv("APP_ENV", "development"),
 		ServerAddress:          getEnv("SERVER_ADDRESS", ":8080"),
 		ContextTimeout:         getEnvAsInt("CONTEXT_TIMEOUT", 2),
-		MongoURI:               getFirstNonEmpty("MONGODB_URI", "DATABASE_URL"),
+		MongoURI:               getFirstNonEmptySecret("MONGODB_URI", "DATABASE_URL"),
 		DBHost:                 getEnv("DB_HOST", ""),
 		DBPort:                 getEnv("DB_PORT", ""),
 		DBUser:                 getEnv("DB_USER", ""),
-		DBPass:                 getEnv("DB_PASS", ""),
+		DBPass:                 getSecretEnv("DB_PASS", ""),
 		DBName:                 getEnv("DB_NAME", ""),
 		DBAuthSource:           getEnv("DB_AUTH_SOURCE", ""),
 		AccessTokenExpiryHour:  getEnvAsInt("ACCESS_TOKEN_EXPIRY_HOUR", 2),
 		RefreshTokenExpiryHour: getEnvAsInt("REFRESH_TOKEN_EXPIRY_HOUR", 168),
-		AccessTokenSecret:      getEnv("ACCESS_TOKEN_SECRET", ""),
-		RefreshTokenSecret:     getEnv("REFRESH_TOKEN_SECRET", ""),
+		AccessTokenSecret:      getSecretEnv("ACCESS_TOKEN_SECRET", ""),
+		RefreshTokenSecret:     getSecretEnv("REFRESH_TOKEN_SECRET", ""),
 		CookieDomain:           getEnv("COOKIE_DOMAIN", ""),
 		CookieSecure:           getEnvAsBool("COOKIE_SECURE", false),
 		CookieSameSite:         getEnv("COOKIE_SAME_SITE", "lax"),
 		CORSAllowedOrigins:     getEnv("CORS_ALLOWED_ORIGINS", ""),
 		SuperAdminPhone:        getEnv("SUPER_ADMIN_PHONE", ""),
-		SuperAdminPassword:     getEnv("SUPER_ADMIN_PASSWORD", ""),
+		SuperAdminPassword:     getSecretEnv("SUPER_ADMIN_PASSWORD", ""),
 		SuperAdminName:         getEnv("SUPER_ADMIN_NAME", ""),
 		SuperAdminEmail:        getEnv("SUPER_ADMIN_EMAIL", ""),
 		SuperAdminOrganization: getEnv("SUPER_ADMIN_ORGANIZATION", ""),
@@ -167,10 +167,21 @@ func getEnv(key, defaultVal string) string {
 	return defaultVal
 }
 
-func getFirstNonEmpty(keys ...string) string {
+func getSecretEnv(key, defaultVal string) string {
+	if filePath := strings.TrimSpace(os.Getenv(key + "_FILE")); filePath != "" {
+		value, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Fatalf("read %s_FILE: %v", key, err)
+		}
+		return strings.TrimRight(string(value), "\r\n")
+	}
+	return getEnv(key, defaultVal)
+}
+
+func getFirstNonEmptySecret(keys ...string) string {
 	for _, key := range keys {
-		if val, ok := os.LookupEnv(key); ok && strings.TrimSpace(val) != "" {
-			return strings.TrimSpace(val)
+		if value := getSecretEnv(key, ""); strings.TrimSpace(value) != "" {
+			return value
 		}
 	}
 	return ""
